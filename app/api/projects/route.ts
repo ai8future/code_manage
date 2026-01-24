@@ -1,43 +1,66 @@
 import { NextResponse } from 'next/server';
 import { scanAllProjects } from '@/lib/scanner';
-import { readConfig, getProjectMetadata } from '@/lib/config';
+import { readConfig } from '@/lib/config';
 import { Project, ProjectStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
+const VALID_STATUSES: ProjectStatus[] = ['active', 'crawlers', 'icebox', 'archived'];
+
+function isValidStatus(status: string): status is ProjectStatus {
+  return VALID_STATUSES.includes(status as ProjectStatus);
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status') as ProjectStatus | null;
+  const statusParam = searchParams.get('status');
   const search = searchParams.get('search')?.toLowerCase();
 
+  // Validate status parameter
+  const status: ProjectStatus | null = statusParam && isValidStatus(statusParam) ? statusParam : null;
+  if (statusParam && !status) {
+    return NextResponse.json(
+      { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+      { status: 400 }
+    );
+  }
+
   try {
-    let projects = await scanAllProjects();
+    // Single scan - reuse for both filtering and counts
+    const allProjects = await scanAllProjects();
     const config = await readConfig();
 
-    // Apply custom metadata from config
-    projects = await Promise.all(
-      projects.map(async (project) => {
-        const metadata = config.projects[project.slug];
-        if (metadata) {
-          return {
-            ...project,
-            status: metadata.status || project.status,
-            name: metadata.customName || project.name,
-            description: metadata.customDescription || project.description,
-          };
-        }
-        return project;
-      })
-    );
+    // Apply custom metadata from config to all projects
+    const projectsWithMetadata: Project[] = allProjects.map((project) => {
+      const metadata = config.projects[project.slug];
+      if (metadata) {
+        return {
+          ...project,
+          status: metadata.status || project.status,
+          name: metadata.customName || project.name,
+          description: metadata.customDescription || project.description,
+        };
+      }
+      return project;
+    });
+
+    // Calculate counts from the already-processed list
+    const counts = {
+      active: projectsWithMetadata.filter((p) => p.status === 'active').length,
+      crawlers: projectsWithMetadata.filter((p) => p.status === 'crawlers').length,
+      icebox: projectsWithMetadata.filter((p) => p.status === 'icebox').length,
+      archived: projectsWithMetadata.filter((p) => p.status === 'archived').length,
+    };
 
     // Filter by status
+    let filteredProjects = projectsWithMetadata;
     if (status) {
-      projects = projects.filter((p) => p.status === status);
+      filteredProjects = filteredProjects.filter((p) => p.status === status);
     }
 
     // Filter by search term
     if (search) {
-      projects = projects.filter(
+      filteredProjects = filteredProjects.filter(
         (p) =>
           p.name.toLowerCase().includes(search) ||
           p.description?.toLowerCase().includes(search) ||
@@ -45,29 +68,8 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get counts by status
-    const allProjects = await scanAllProjects();
-    const counts = {
-      active: allProjects.filter((p) => {
-        const meta = config.projects[p.slug];
-        return (meta?.status || p.status) === 'active';
-      }).length,
-      crawlers: allProjects.filter((p) => {
-        const meta = config.projects[p.slug];
-        return (meta?.status || p.status) === 'crawlers';
-      }).length,
-      icebox: allProjects.filter((p) => {
-        const meta = config.projects[p.slug];
-        return (meta?.status || p.status) === 'icebox';
-      }).length,
-      archived: allProjects.filter((p) => {
-        const meta = config.projects[p.slug];
-        return (meta?.status || p.status) === 'archived';
-      }).length,
-    };
-
     return NextResponse.json({
-      projects,
+      projects: filteredProjects,
       counts,
     });
   } catch (error) {

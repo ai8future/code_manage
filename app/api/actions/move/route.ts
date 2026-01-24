@@ -8,6 +8,7 @@ const CODE_BASE_PATH = '/Users/cliff/Desktop/_code';
 
 const STATUS_FOLDERS: Record<ProjectStatus, string | null> = {
   active: null, // Root level
+  crawlers: '_crawlers',
   icebox: '_icebox',
   archived: '_old',
 };

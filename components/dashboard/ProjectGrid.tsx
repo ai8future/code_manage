@@ -16,6 +16,7 @@ interface ProjectsResponse {
   projects: Project[];
   counts: {
     active: number;
+    crawlers: number;
     icebox: number;
     archived: number;
   };

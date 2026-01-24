@@ -5,12 +5,13 @@ import { Sidebar } from './Sidebar';
 
 interface ProjectCounts {
   active: number;
+  crawlers: number;
   icebox: number;
   archived: number;
 }
 
 export function SidebarWrapper() {
-  const [counts, setCounts] = useState<ProjectCounts>({ active: 0, icebox: 0, archived: 0 });
+  const [counts, setCounts] = useState<ProjectCounts>({ active: 0, crawlers: 0, icebox: 0, archived: 0 });
 
   useEffect(() => {
     const fetchCounts = async () => {

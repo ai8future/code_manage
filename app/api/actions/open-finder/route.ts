@@ -1,22 +1,34 @@
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
+import path from 'path';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+const CODE_BASE_PATH = '/Users/cliff/Desktop/_code';
 
 export async function POST(request: Request) {
   try {
-    const { path } = await request.json();
+    const { path: filePath } = await request.json();
 
-    if (!path) {
+    if (!filePath || typeof filePath !== 'string') {
       return NextResponse.json(
         { error: 'Path is required' },
         { status: 400 }
       );
     }
 
-    // Open in Finder (macOS)
-    await execAsync(`open "${path}"`);
+    // Security: Resolve path and validate it's within allowed directory
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(CODE_BASE_PATH + '/') && resolvedPath !== CODE_BASE_PATH) {
+      return NextResponse.json(
+        { error: 'Invalid path' },
+        { status: 403 }
+      );
+    }
+
+    // Open in Finder using execFile (prevents shell injection)
+    await execFileAsync('open', [resolvedPath]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

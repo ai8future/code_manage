@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
+
+const CODE_BASE_PATH = '/Users/cliff/Desktop/_code';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const filePath = searchParams.get('path');
 
-  if (!filePath) {
+  if (!filePath || typeof filePath !== 'string') {
     return NextResponse.json(
       { error: 'Path is required' },
       { status: 400 }
     );
   }
 
-  // Security: only allow reading from _code directory
-  if (!filePath.startsWith('/Users/cliff/Desktop/_code/')) {
+  // Security: Resolve path to prevent traversal attacks (e.g., ../../etc/passwd)
+  const resolvedPath = path.resolve(filePath);
+  if (!resolvedPath.startsWith(CODE_BASE_PATH + '/')) {
     return NextResponse.json(
       { error: 'Invalid path' },
       { status: 403 }
@@ -23,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(resolvedPath, 'utf-8');
     return NextResponse.json({ content });
   } catch (error) {
     console.error('Error reading file:', error);
