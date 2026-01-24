@@ -12,6 +12,13 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      width: {
+        'sidebar-collapsed': '64px',
+        'sidebar-expanded': '256px',
+      },
+      transitionProperty: {
+        'width': 'width',
+      },
     },
   },
   plugins: [],
