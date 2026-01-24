@@ -1,4 +1,4 @@
-import { FolderOpen, Snowflake, Archive } from 'lucide-react';
+import { FolderOpen, Snowflake, Archive, Bug } from 'lucide-react';
 import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
 import { ProjectStatus } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -12,6 +12,11 @@ const STATUS_CONFIG: Record<string, {
     title: 'Active Projects',
     icon: FolderOpen,
     status: 'active',
+  },
+  crawlers: {
+    title: 'Crawlers',
+    icon: Bug,
+    status: 'crawlers',
   },
   icebox: {
     title: 'Icebox',
@@ -28,6 +33,7 @@ const STATUS_CONFIG: Record<string, {
 export async function generateStaticParams() {
   return [
     { status: 'active' },
+    { status: 'crawlers' },
     { status: 'icebox' },
     { status: 'archived' },
   ];

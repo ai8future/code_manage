@@ -21,6 +21,7 @@ const IGNORED_FOLDERS = new Set([
 
 // Folders that indicate special status
 const STATUS_FOLDERS: Record<string, ProjectStatus> = {
+  '_crawlers': 'crawlers',
   '_icebox': 'icebox',
   '_old': 'archived',
 };

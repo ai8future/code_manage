@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-01-24
+
+### Added
+- New "Crawlers" status category for crawler projects in _crawlers folder
+- Crawlers section in sidebar (above Icebox) with Bug icon
+
 ## [1.0.1] - 2026-01-24
 
 ### Fixed

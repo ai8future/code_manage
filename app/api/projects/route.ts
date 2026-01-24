@@ -52,6 +52,10 @@ export async function GET(request: Request) {
         const meta = config.projects[p.slug];
         return (meta?.status || p.status) === 'active';
       }).length,
+      crawlers: allProjects.filter((p) => {
+        const meta = config.projects[p.slug];
+        return (meta?.status || p.status) === 'crawlers';
+      }).length,
       icebox: allProjects.filter((p) => {
         const meta = config.projects[p.slug];
         return (meta?.status || p.status) === 'icebox';

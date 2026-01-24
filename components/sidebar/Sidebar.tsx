@@ -8,7 +8,8 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeft,
-  LayoutDashboard
+  LayoutDashboard,
+  Bug
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { SidebarItem } from './SidebarItem';
@@ -17,6 +18,7 @@ import { ProjectStatus } from '@/lib/types';
 
 interface ProjectCounts {
   active: number;
+  crawlers: number;
   icebox: number;
   archived: number;
 }
@@ -25,7 +27,7 @@ interface SidebarProps {
   counts?: ProjectCounts;
 }
 
-export function Sidebar({ counts = { active: 0, icebox: 0, archived: 0 } }: SidebarProps) {
+export function Sidebar({ counts = { active: 0, crawlers: 0, icebox: 0, archived: 0 } }: SidebarProps) {
   const { collapsed, toggleCollapsed } = useSidebar();
   const [expandedStatus, setExpandedStatus] = useState<ProjectStatus | null>(null);
 
@@ -88,6 +90,15 @@ export function Sidebar({ counts = { active: 0, icebox: 0, archived: 0 } }: Side
             badge={counts.active}
             expanded={expandedStatus === 'active'}
             onToggle={() => handleToggle('active')}
+          />
+          <SidebarProjectList
+            href="/crawlers"
+            icon={Bug}
+            label="Crawlers"
+            status="crawlers"
+            badge={counts.crawlers}
+            expanded={expandedStatus === 'crawlers'}
+            onToggle={() => handleToggle('crawlers')}
           />
           <SidebarProjectList
             href="/icebox"

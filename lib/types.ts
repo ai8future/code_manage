@@ -1,4 +1,4 @@
-export type ProjectStatus = 'active' | 'icebox' | 'archived';
+export type ProjectStatus = 'active' | 'crawlers' | 'icebox' | 'archived';
 
 export interface BugReport {
   filename: string;
