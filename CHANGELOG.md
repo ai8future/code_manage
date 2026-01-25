@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2026-01-25
+
+### Added
+- Syntax highlighting for code blocks in README preview and bug modals
+- Uses Prism with oneDark theme for colorful, readable code display
+
 ## [1.0.4] - 2026-01-24
 
 ### Security

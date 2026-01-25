@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileText } from 'lucide-react';
 
 interface ReadmePreviewProps {
@@ -74,19 +76,35 @@ export function ReadmePreview({ projectPath }: ReadmePreviewProps) {
             ul: ({ children }) => <ul className="list-disc pl-5 mb-3">{children}</ul>,
             ol: ({ children }) => <ol className="list-decimal pl-5 mb-3">{children}</ol>,
             li: ({ children }) => <li className="mb-1 text-gray-700 dark:text-gray-300">{children}</li>,
-            code: ({ className, children }) => {
-              const isInline = !className;
-              return isInline ? (
-                <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono">
-                  {children}
-                </code>
-              ) : (
-                <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm font-mono overflow-x-auto">
-                  {children}
-                </code>
+            code: ({ className, children, ...props }) => {
+              const match = /language-(\w+)/.exec(className || '');
+              const isInline = !match && !className;
+
+              if (isInline) {
+                return (
+                  <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400">
+                    {children}
+                  </code>
+                );
+              }
+
+              const language = match ? match[1] : 'text';
+              return (
+                <SyntaxHighlighter
+                  style={oneDark}
+                  language={language}
+                  PreTag="div"
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
               );
             },
-            pre: ({ children }) => <pre className="mb-4">{children}</pre>,
+            pre: ({ children }) => <div className="mb-4 overflow-hidden rounded-lg">{children}</div>,
             a: ({ href, children }) => (
               <a
                 href={href}

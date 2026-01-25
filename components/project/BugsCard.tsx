@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Bug, CheckCircle, ChevronDown, ChevronRight, ExternalLink, X, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { BugInfo, BugReport } from '@/lib/types';
 
 interface BugsCardProps {
@@ -85,7 +87,41 @@ function BugModal({ bug, projectPath, onClose, onOpenInEditor }: BugModalProps) 
           )}
           {content && (
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{content}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  code: ({ className, children, ...props }) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    const isInline = !match && !className;
+
+                    if (isInline) {
+                      return (
+                        <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400">
+                          {children}
+                        </code>
+                      );
+                    }
+
+                    const language = match ? match[1] : 'text';
+                    return (
+                      <SyntaxHighlighter
+                        style={oneDark}
+                        language={language}
+                        PreTag="div"
+                        customStyle={{
+                          margin: 0,
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    );
+                  },
+                  pre: ({ children }) => <div className="mb-4 overflow-hidden rounded-lg">{children}</div>,
+                }}
+              >
+                {content}
+              </ReactMarkdown>
             </div>
           )}
         </div>
