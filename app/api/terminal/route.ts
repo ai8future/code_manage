@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           resolve({
             stdout: stdout || '',
             stderr: stderr || '',
-            exitCode: typeof error?.code === 'number' ? error.code : (error ? 1 : 0),
+            exitCode: error ? 1 : 0,
           });
         }
       );
