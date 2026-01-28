@@ -187,11 +187,26 @@ export async function getGitInfo(projectPath: string): Promise<{
     return { hasGit: false };
   }
 
+  // Handle worktrees/submodules where .git is a file pointing to gitdir
+  let gitDir = gitPath;
+  try {
+    const gitStat = await fs.stat(gitPath);
+    if (gitStat.isFile()) {
+      const gitFile = await readTextFile(gitPath);
+      const match = gitFile?.match(/^gitdir:\s*(.+)\s*$/m);
+      if (match) {
+        gitDir = path.resolve(projectPath, match[1].trim());
+      }
+    }
+  } catch {
+    return { hasGit: false };
+  }
+
   let branch: string | undefined;
   let remote: string | undefined;
 
   // Read current branch from HEAD
-  const headContent = await readTextFile(path.join(gitPath, 'HEAD'));
+  const headContent = await readTextFile(path.join(gitDir, 'HEAD'));
   if (headContent) {
     const match = headContent.match(/ref: refs\/heads\/(.+)/);
     if (match) {
@@ -200,7 +215,7 @@ export async function getGitInfo(projectPath: string): Promise<{
   }
 
   // Read remote URL
-  const configContent = await readTextFile(path.join(gitPath, 'config'));
+  const configContent = await readTextFile(path.join(gitDir, 'config'));
   if (configContent) {
     const remoteMatch = configContent.match(/\[remote "origin"\][^\[]*url\s*=\s*(.+)/);
     if (remoteMatch) {
