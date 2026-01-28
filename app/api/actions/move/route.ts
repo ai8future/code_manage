@@ -3,15 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { ProjectStatus } from '@/lib/types';
 import { setProjectMetadata } from '@/lib/config';
-
-const CODE_BASE_PATH = '/Users/cliff/Desktop/_code';
-
-const STATUS_FOLDERS: Record<ProjectStatus, string | null> = {
-  active: null, // Root level
-  crawlers: '_crawlers',
-  icebox: '_icebox',
-  archived: '_old',
-};
+import { CODE_BASE_PATH, STATUS_FOLDERS } from '@/lib/constants';
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +16,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const projectName = path.basename(projectPath);
+    // Security: Validate source path is within allowed directory
+    const resolvedSourcePath = path.resolve(projectPath);
+    if (!resolvedSourcePath.startsWith(CODE_BASE_PATH + '/')) {
+      return NextResponse.json(
+        { error: 'Invalid source path' },
+        { status: 403 }
+      );
+    }
+
+    // Validate newStatus is a valid status
+    if (!Object.prototype.hasOwnProperty.call(STATUS_FOLDERS, newStatus)) {
+      return NextResponse.json(
+        { error: 'Invalid status' },
+        { status: 400 }
+      );
+    }
+
+    const projectName = path.basename(resolvedSourcePath);
 
     // Determine target directory
     const statusFolder = STATUS_FOLDERS[newStatus as ProjectStatus];
@@ -51,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     // Move the project
-    await fs.rename(projectPath, targetPath);
+    await fs.rename(resolvedSourcePath, targetPath);
 
     // Update metadata
     await setProjectMetadata(slug, { status: newStatus as ProjectStatus });
