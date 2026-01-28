@@ -1,8 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { Project, ProjectStatus, BugInfo, BugReport, RcodegenInfo, RcodegenGrade, RcodegenTaskGrade } from './types';
-
-const CODE_BASE_PATH = '/Users/cliff/Desktop/_code';
+import { CODE_BASE_PATH, FOLDER_TO_STATUS } from './constants';
 
 // Folders to completely ignore
 const IGNORED_FOLDERS = new Set([
@@ -19,12 +18,6 @@ const IGNORED_FOLDERS = new Set([
   '.claude',
 ]);
 
-// Folders that indicate special status
-const STATUS_FOLDERS: Record<string, ProjectStatus> = {
-  '_crawlers': 'crawlers',
-  '_icebox': 'icebox',
-  '_old': 'archived',
-};
 
 // Files that indicate this is a project root
 const PROJECT_INDICATORS = [
@@ -460,8 +453,8 @@ export function determineStatus(projectPath: string): ProjectStatus {
   const parts = relativePath.split(path.sep);
 
   for (const part of parts) {
-    if (STATUS_FOLDERS[part]) {
-      return STATUS_FOLDERS[part];
+    if (FOLDER_TO_STATUS[part]) {
+      return FOLDER_TO_STATUS[part];
     }
   }
 
@@ -504,7 +497,10 @@ export async function scanProject(projectPath: string): Promise<Project | null> 
       scanRcodegen(projectPath),
     ]);
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
   return {
     slug,
@@ -558,8 +554,8 @@ export async function scanAllProjects(): Promise<Project[]> {
   // Scan root level (direct children of _code)
   await scanLevel(CODE_BASE_PATH);
 
-  // Scan status folders (_icebox, _old)
-  for (const [folderName] of Object.entries(STATUS_FOLDERS)) {
+  // Scan status folders (_crawlers, _icebox, _old)
+  for (const folderName of Object.keys(FOLDER_TO_STATUS)) {
     const statusPath = path.join(CODE_BASE_PATH, folderName);
     try {
       await fs.access(statusPath);
