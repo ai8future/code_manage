@@ -38,8 +38,8 @@ export function Sidebar({ counts = { active: 0, crawlers: 0, icebox: 0, archived
   return (
     <aside
       className={`
-        h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
-        flex flex-col
+        h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700/50
+        flex flex-col shadow-[2px_0_8px_rgba(0,0,0,0.04)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.2)]
         transition-[width] duration-200 ease-out
         ${collapsed ? 'w-16' : 'w-64'}
       `}

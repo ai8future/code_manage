@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { SidebarProvider } from "@/components/sidebar/SidebarContext";
 import { SidebarWrapper } from "@/components/sidebar/SidebarWrapper";
+import { ToastProvider } from "@/components/toast/ToastContext";
+import { ToastContainer } from "@/components/toast/Toast";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,14 +32,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased font-[family-name:var(--font-geist-sans)]`}
       >
-        <SidebarProvider>
-          <div className="flex h-screen overflow-hidden">
-            <SidebarWrapper />
-            <main className="flex-1 overflow-auto">
-              {children}
-            </main>
-          </div>
-        </SidebarProvider>
+        <ToastProvider>
+          <SidebarProvider>
+            <div className="flex h-screen overflow-hidden">
+              <SidebarWrapper />
+              <main className="flex-1 overflow-auto">
+                {children}
+              </main>
+            </div>
+          </SidebarProvider>
+          <ToastContainer />
+        </ToastProvider>
       </body>
     </html>
   );

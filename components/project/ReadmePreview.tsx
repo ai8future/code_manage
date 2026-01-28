@@ -36,7 +36,7 @@ export function ReadmePreview({ projectPath }: ReadmePreviewProps) {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-6 shadow-sm">
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
@@ -51,7 +51,7 @@ export function ReadmePreview({ projectPath }: ReadmePreviewProps) {
 
   if (!content) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-6 shadow-sm">
         <div className="flex items-center gap-2 text-gray-500">
           <FileText size={18} />
           <span>No README found</span>
@@ -61,7 +61,7 @@ export function ReadmePreview({ projectPath }: ReadmePreviewProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-6 shadow-sm">
       <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
         <FileText size={18} className="text-gray-500" />
         README

@@ -42,9 +42,9 @@ function BugModal({ bug, projectPath, onClose, onOpenInEditor }: BugModalProps) 
   }, [bug, projectPath]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700/50 w-full max-w-3xl max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -155,7 +155,7 @@ export function BugsCard({ bugs, projectPath }: BugsCardProps) {
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-red-500 p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <Bug size={18} className="text-red-500" />
           <h3 className="font-semibold text-gray-900 dark:text-white">Bug Tracking</h3>

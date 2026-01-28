@@ -12,7 +12,7 @@ export function InfoCards({ project }: InfoCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {/* Tech Stack Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-blue-500 p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Code2 size={18} className="text-blue-500" />
           <h3 className="font-semibold text-gray-900 dark:text-white">Tech Stack</h3>
@@ -29,7 +29,7 @@ export function InfoCards({ project }: InfoCardsProps) {
       </div>
 
       {/* Git Info Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-orange-500 p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <GitBranch size={18} className="text-green-500" />
           <h3 className="font-semibold text-gray-900 dark:text-white">Git Status</h3>
@@ -54,7 +54,7 @@ export function InfoCards({ project }: InfoCardsProps) {
       </div>
 
       {/* Dependencies Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-green-500 p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Package size={18} className="text-purple-500" />
           <h3 className="font-semibold text-gray-900 dark:text-white">Dependencies</h3>

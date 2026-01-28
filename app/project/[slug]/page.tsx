@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Project } from '@/lib/types';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ProjectHeader } from '@/components/project/ProjectHeader';
 import { InfoCards } from '@/components/project/InfoCards';
 import { BugsCard } from '@/components/project/BugsCard';
@@ -62,6 +63,13 @@ export default function ProjectPage() {
 
   return (
     <div className={`p-6 ${showTerminal ? 'pb-80' : ''}`}>
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/' },
+          { label: project.name },
+        ]}
+      />
+
       <ProjectHeader
         project={project}
         onOpenTerminal={() => setShowTerminal(true)}

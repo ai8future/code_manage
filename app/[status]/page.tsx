@@ -1,5 +1,6 @@
 import { FolderOpen, Snowflake, Archive, Bug } from 'lucide-react';
 import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ProjectStatus } from '@/lib/types';
 import { notFound } from 'next/navigation';
 
@@ -51,16 +52,15 @@ export default async function StatusPage({
     notFound();
   }
 
-  const Icon = config.icon;
-
   return (
     <div className="p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Icon className="w-8 h-8 text-blue-500" />
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {config.title}
-        </h1>
-      </div>
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/' },
+          { label: config.title },
+        ]}
+        title={config.title}
+      />
 
       <ProjectGrid status={config.status} showSearch />
     </div>
