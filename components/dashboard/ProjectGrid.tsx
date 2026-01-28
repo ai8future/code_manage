@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Project, ProjectStatus } from '@/lib/types';
 import { ProjectCard } from './ProjectCard';
 import { SearchBar } from './SearchBar';
-import { Loader2, FolderX } from 'lucide-react';
+import { SkeletonGrid } from '@/components/layout/SkeletonCard';
+import { FolderX } from 'lucide-react';
+import { useProjectActions } from '@/lib/hooks/useProjectActions';
 
 interface ProjectGridProps {
   status?: ProjectStatus;
@@ -71,38 +73,30 @@ export function ProjectGrid({ status, title, showSearch = true }: ProjectGridPro
     );
   }, [search, projects]);
 
-  const handleOpenInEditor = async (project: Project) => {
-    try {
-      await fetch('/api/actions/open-editor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: project.path }),
-      });
-    } catch (err) {
-      console.error('Failed to open in editor:', err);
-    }
-  };
+  const { openInEditor, openInFinder, copyPath } = useProjectActions();
 
-  const handleOpenInFinder = async (project: Project) => {
-    try {
-      await fetch('/api/actions/open-finder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: project.path }),
-      });
-    } catch (err) {
-      console.error('Failed to open in Finder:', err);
-    }
-  };
-
-  const handleCopyPath = (project: Project) => {
-    navigator.clipboard.writeText(project.path);
-  };
+  const handleOpenInEditor = (project: Project) => openInEditor(project.path);
+  const handleOpenInFinder = (project: Project) => openInFinder(project.path);
+  const handleCopyPath = (project: Project) => copyPath(project.path);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div>
+        {(title || showSearch) && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+            {title && (
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {title}
+              </h2>
+            )}
+            {showSearch && (
+              <div className="sm:ml-auto w-full sm:w-72">
+                <SearchBar value="" onChange={() => {}} />
+              </div>
+            )}
+          </div>
+        )}
+        <SkeletonGrid count={8} />
       </div>
     );
   }
@@ -136,22 +130,30 @@ export function ProjectGrid({ status, title, showSearch = true }: ProjectGridPro
       )}
 
       {filteredProjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-          <FolderX size={48} className="mb-4 opacity-50" />
-          <p>
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+          <FolderX size={64} className="mb-4 opacity-40" />
+          <p className="text-lg font-medium mb-1">
             {search ? 'No projects match your search' : 'No projects found'}
+          </p>
+          <p className="text-sm text-gray-400">
+            {search ? 'Try adjusting your search terms' : 'Projects will appear here when added'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProjects.map((project) => (
-            <ProjectCard
+          {filteredProjects.map((project, index) => (
+            <div
               key={project.slug}
-              project={project}
-              onOpenInEditor={handleOpenInEditor}
-              onOpenInFinder={handleOpenInFinder}
-              onCopyPath={handleCopyPath}
-            />
+              className="animate-fade-up"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <ProjectCard
+                project={project}
+                onOpenInEditor={handleOpenInEditor}
+                onOpenInFinder={handleOpenInFinder}
+                onCopyPath={handleCopyPath}
+              />
+            </div>
           ))}
         </div>
       )}

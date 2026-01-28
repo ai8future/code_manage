@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Award, ChevronDown, ChevronRight, ExternalLink, FileText, Beaker, Wrench, RefreshCw, ClipboardCheck } from 'lucide-react';
 import { RcodegenInfo, RcodegenGrade, RcodegenTask } from '@/lib/types';
+import { getGradeColor, getGradeBgColor } from '@/lib/utils/grades';
+import { formatShortDate } from '@/lib/utils/dates';
 
 interface CodeQualityCardProps {
   rcodegen: RcodegenInfo;
@@ -25,18 +27,6 @@ const TASK_LABELS: Record<RcodegenTask | 'quick', string> = {
   quick: 'Quick',
 };
 
-function getGradeColor(grade: number): string {
-  if (grade >= 80) return 'text-green-600 dark:text-green-400';
-  if (grade >= 60) return 'text-yellow-600 dark:text-yellow-400';
-  return 'text-red-600 dark:text-red-400';
-}
-
-function getGradeBgColor(grade: number): string {
-  if (grade >= 80) return 'bg-green-100 dark:bg-green-900/30';
-  if (grade >= 60) return 'bg-yellow-100 dark:bg-yellow-900/30';
-  return 'bg-red-100 dark:bg-red-900/30';
-}
-
 export function CodeQualityCard({ rcodegen, projectPath }: CodeQualityCardProps) {
   const [showReports, setShowReports] = useState(false);
 
@@ -54,19 +44,10 @@ export function CodeQualityCard({ rcodegen, projectPath }: CodeQualityCardProps)
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   const hasTaskGrades = Object.values(rcodegen.taskGrades).some(arr => arr.length > 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-purple-500 p-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <Award size={18} className="text-blue-500" />
@@ -134,7 +115,7 @@ export function CodeQualityCard({ rcodegen, projectPath }: CodeQualityCardProps)
                     <p className="text-sm text-gray-900 dark:text-white truncate">
                       {TASK_LABELS[report.task]} - {report.tool}
                     </p>
-                    <p className="text-xs text-gray-500">{formatDate(report.date)}</p>
+                    <p className="text-xs text-gray-500">{formatShortDate(report.date)}</p>
                   </div>
                   <span className={`text-sm font-medium ${getGradeColor(report.grade)}`}>
                     {report.grade}
@@ -150,7 +131,7 @@ export function CodeQualityCard({ rcodegen, projectPath }: CodeQualityCardProps)
       {/* Last run info */}
       {rcodegen.lastRun && (
         <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          Last analyzed: {formatDate(rcodegen.lastRun)}
+          Last analyzed: {formatShortDate(rcodegen.lastRun)}
         </p>
       )}
     </div>

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useClickOutside } from '@/lib/hooks/useClickOutside';
+import { useProjectActions } from '@/lib/hooks/useProjectActions';
 import { useRouter } from 'next/navigation';
 import {
   MoreVertical,
@@ -10,6 +12,7 @@ import {
   Snowflake,
   Archive,
   FolderInput,
+  Bug,
 } from 'lucide-react';
 import { Project, ProjectStatus } from '@/lib/types';
 
@@ -24,45 +27,21 @@ export function ActionsMenu({ project, onRefresh }: ActionsMenuProps) {
   const [moving, setMoving] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(menuRef, useCallback(() => setShowMenu(false), []));
+  const { openInEditor, openInFinder, copyPath } = useProjectActions();
 
   const handleOpenInEditor = async () => {
-    try {
-      await fetch('/api/actions/open-editor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: project.path }),
-      });
-    } catch (err) {
-      console.error('Failed to open in editor:', err);
-    }
+    await openInEditor(project.path);
     setShowMenu(false);
   };
 
   const handleOpenInFinder = async () => {
-    try {
-      await fetch('/api/actions/open-finder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: project.path }),
-      });
-    } catch (err) {
-      console.error('Failed to open in Finder:', err);
-    }
+    await openInFinder(project.path);
     setShowMenu(false);
   };
 
   const handleCopyPath = () => {
-    navigator.clipboard.writeText(project.path);
+    copyPath(project.path);
     setShowMenu(false);
   };
 
@@ -102,6 +81,7 @@ export function ActionsMenu({ project, onRefresh }: ActionsMenuProps) {
 
   const statusOptions: { status: ProjectStatus; label: string; icon: typeof FolderOpen }[] = [
     { status: 'active', label: 'Active', icon: FolderInput },
+    { status: 'crawlers', label: 'Crawlers', icon: Bug },
     { status: 'icebox', label: 'Icebox', icon: Snowflake },
     { status: 'archived', label: 'Archive', icon: Archive },
   ];

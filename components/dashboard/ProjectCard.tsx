@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { GitBranch, Clock, MoreVertical, ExternalLink, FolderOpen, Copy, Bug, Award } from 'lucide-react';
 import { Project } from '@/lib/types';
 import { TechBadge } from './TechBadge';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useClickOutside } from '@/lib/hooks/useClickOutside';
+import { getGradeColor, getGradeBgColor } from '@/lib/utils/grades';
+import { formatRelativeDate } from '@/lib/utils/dates';
 
 interface ProjectCardProps {
   project: Project;
@@ -17,33 +20,10 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
-  };
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(menuRef, useCallback(() => setShowMenu(false), []));
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors group">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-4 shadow-sm hover:shadow-md hover:scale-[1.01] hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 ease-out group">
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <Link
@@ -61,13 +41,7 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
           )}
           {project.rcodegen?.latestGrade != null && (
             <span
-              className={`flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
-                project.rcodegen.latestGrade >= 80
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : project.rcodegen.latestGrade >= 60
-                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-              }`}
+              className={`flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${getGradeBgColor(project.rcodegen.latestGrade)} ${getGradeColor(project.rcodegen.latestGrade)}`}
               title={`Code quality grade: ${project.rcodegen.latestGrade}`}
             >
               <Award size={12} />
@@ -83,7 +57,7 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
             <MoreVertical size={16} className="text-gray-500" />
           </button>
           {showMenu && (
-            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
+            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700/50 py-1 z-10">
               <button
                 onClick={() => {
                   onOpenInEditor?.(project);
@@ -151,7 +125,7 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
         )}
         <span className="flex items-center gap-1 ml-auto">
           <Clock size={12} />
-          {formatDate(project.lastModified)}
+          {formatRelativeDate(project.lastModified)}
         </span>
       </div>
     </div>

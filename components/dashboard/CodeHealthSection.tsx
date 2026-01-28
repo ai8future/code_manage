@@ -4,18 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Award, AlertTriangle, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { Project } from '@/lib/types';
-
-function getGradeColor(grade: number): string {
-  if (grade >= 80) return 'text-green-600 dark:text-green-400';
-  if (grade >= 60) return 'text-yellow-600 dark:text-yellow-400';
-  return 'text-red-600 dark:text-red-400';
-}
-
-function getGradeBgColor(grade: number): string {
-  if (grade >= 80) return 'bg-green-100 dark:bg-green-900/30';
-  if (grade >= 60) return 'bg-yellow-100 dark:bg-yellow-900/30';
-  return 'bg-red-100 dark:bg-red-900/30';
-}
+import { getGradeColor, getGradeBgColor } from '@/lib/utils/grades';
 
 export function CodeHealthSection() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -82,7 +71,7 @@ export function CodeHealthSection() {
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {/* Average Grade */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={16} className="text-gray-500" />
             <span className="text-sm text-gray-500 dark:text-gray-400">Average Grade</span>
@@ -96,7 +85,7 @@ export function CodeHealthSection() {
         </div>
 
         {/* Needs Attention */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={16} className="text-red-500" />
             <span className="text-sm text-gray-500 dark:text-gray-400">Needs Attention</span>
@@ -110,7 +99,7 @@ export function CodeHealthSection() {
         </div>
 
         {/* Not Analyzed */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Award size={16} className="text-gray-400" />
             <span className="text-sm text-gray-500 dark:text-gray-400">Not Analyzed</span>
@@ -126,7 +115,7 @@ export function CodeHealthSection() {
 
       {/* Projects Needing Attention */}
       {needsAttention.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-red-500 p-4 mb-4 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <AlertTriangle size={14} className="text-red-500" />
             Projects Needing Attention
@@ -153,7 +142,7 @@ export function CodeHealthSection() {
 
       {/* Top Projects */}
       {topProjects.length > 0 && needsAttention.length === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 border-l-4 border-l-green-500 p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <Award size={14} className="text-green-500" />
             Top Performing Projects

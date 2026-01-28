@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.6] - 2026-01-28
+
+### Refactored
+- Extract shared utilities to eliminate code duplication
+  - `lib/hooks/useClickOutside.ts` - Reusable click-outside detection hook
+  - `lib/hooks/useProjectActions.ts` - Centralized project actions (open editor, finder, copy path)
+  - `lib/utils/grades.ts` - Grade color/background utilities
+  - `lib/utils/dates.ts` - Date formatting utilities (relative and short formats)
+- Update ActionsMenu, ProjectCard, ProjectGrid, CodeHealthSection, and CodeQualityCard to use shared utilities
+- Add barrel exports for hooks and utils
+
+### Agent
+- Claude:Opus 4.5
+
 ## [1.0.5] - 2026-01-25
 
 ### Added
