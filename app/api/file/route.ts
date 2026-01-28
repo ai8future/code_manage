@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { CODE_BASE_PATH } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
-
-const CODE_BASE_PATH = '/Users/cliff/Desktop/_code';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,6 +23,19 @@ export async function GET(request: Request) {
       { error: 'Invalid path' },
       { status: 403 }
     );
+  }
+
+  // Security: Check real path to prevent symlink attacks
+  try {
+    const realPath = await fs.realpath(resolvedPath);
+    if (!realPath.startsWith(CODE_BASE_PATH + '/') && realPath !== CODE_BASE_PATH) {
+      return NextResponse.json(
+        { error: 'Invalid path: symlink outside allowed directory' },
+        { status: 403 }
+      );
+    }
+  } catch {
+    // File doesn't exist - will fail on read anyway
   }
 
   try {
