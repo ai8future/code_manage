@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { CODE_BASE_PATH } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,18 @@ export async function GET(request: Request) {
     );
   }
 
+  // Security: Validate path is within allowed directory
+  const resolvedPath = path.resolve(projectPath);
+  if (!resolvedPath.startsWith(CODE_BASE_PATH + '/') && resolvedPath !== CODE_BASE_PATH) {
+    return NextResponse.json(
+      { error: 'Invalid path' },
+      { status: 403 }
+    );
+  }
+
   try {
     for (const filename of README_FILES) {
-      const filePath = path.join(projectPath, filename);
+      const filePath = path.join(resolvedPath, filename);
       try {
         const content = await fs.readFile(filePath, 'utf-8');
         return NextResponse.json({ content, filename });
