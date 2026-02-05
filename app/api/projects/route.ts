@@ -2,27 +2,29 @@ import { NextResponse } from 'next/server';
 import { scanAllProjects } from '@/lib/scanner';
 import { readConfig } from '@/lib/config';
 import { Project, ProjectStatus } from '@/lib/types';
+import { createRouteLogger } from '@/lib/logger';
+import { ProjectStatusSchema } from '@/lib/schemas';
+
+const log = createRouteLogger('projects');
 
 export const dynamic = 'force-dynamic';
-
-const VALID_STATUSES: ProjectStatus[] = ['active', 'crawlers', 'icebox', 'archived'];
-
-function isValidStatus(status: string): status is ProjectStatus {
-  return VALID_STATUSES.includes(status as ProjectStatus);
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const statusParam = searchParams.get('status');
   const search = searchParams.get('search')?.toLowerCase();
 
-  // Validate status parameter
-  const status: ProjectStatus | null = statusParam && isValidStatus(statusParam) ? statusParam : null;
-  if (statusParam && !status) {
-    return NextResponse.json(
-      { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
-      { status: 400 }
-    );
+  // Validate status parameter using Zod
+  let status: ProjectStatus | null = null;
+  if (statusParam) {
+    const parsed = ProjectStatusSchema.safeParse(statusParam);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${ProjectStatusSchema.options.join(', ')}` },
+        { status: 400 }
+      );
+    }
+    status = parsed.data;
   }
 
   try {
@@ -39,15 +41,18 @@ export async function GET(request: Request) {
           status: metadata.status || project.status,
           name: metadata.customName || project.name,
           description: metadata.customDescription || project.description,
+          starred: metadata.starred || false,
         };
       }
-      return project;
+      return { ...project, starred: false };
     });
 
     // Calculate counts from the already-processed list
     const counts = {
       active: projectsWithMetadata.filter((p) => p.status === 'active').length,
       crawlers: projectsWithMetadata.filter((p) => p.status === 'crawlers').length,
+      research: projectsWithMetadata.filter((p) => p.status === 'research').length,
+      tools: projectsWithMetadata.filter((p) => p.status === 'tools').length,
       icebox: projectsWithMetadata.filter((p) => p.status === 'icebox').length,
       archived: projectsWithMetadata.filter((p) => p.status === 'archived').length,
     };
@@ -68,12 +73,19 @@ export async function GET(request: Request) {
       );
     }
 
+    // Sort: starred first, then by name
+    filteredProjects.sort((a, b) => {
+      if (a.starred && !b.starred) return -1;
+      if (!a.starred && b.starred) return 1;
+      return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    });
+
     return NextResponse.json({
       projects: filteredProjects,
       counts,
     });
   } catch (error) {
-    console.error('Error scanning projects:', error);
+    log.error({ err: error }, 'Error scanning projects');
     return NextResponse.json(
       { error: 'Failed to scan projects' },
       { status: 500 }

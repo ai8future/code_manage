@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { GitBranch, Clock, MoreVertical, ExternalLink, FolderOpen, Copy, Bug, Award } from 'lucide-react';
+import { GitBranch, Clock, MoreVertical, ExternalLink, FolderOpen, Copy, Bug, Award, Star } from 'lucide-react';
 import { Project } from '@/lib/types';
 import { TechBadge } from './TechBadge';
 import { useState, useRef, useCallback } from 'react';
@@ -14,9 +14,10 @@ interface ProjectCardProps {
   onOpenInEditor?: (project: Project) => void;
   onOpenInFinder?: (project: Project) => void;
   onCopyPath?: (project: Project) => void;
+  onToggleStar?: (project: Project) => void;
 }
 
-export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPath }: ProjectCardProps) {
+export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPath, onToggleStar }: ProjectCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -26,13 +27,35 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/50 p-4 shadow-sm hover:shadow-md hover:scale-[1.01] hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 ease-out group">
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
-        <Link
-          href={`/project/${project.slug}`}
-          className="flex-1 min-w-0 flex items-center gap-2"
-        >
-          <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-500 transition-colors">
-            {project.name}
-          </h3>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onToggleStar?.(project);
+            }}
+            className="flex-shrink-0 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title={project.starred ? 'Unstar project' : 'Star project'}
+          >
+            <Star
+              size={16}
+              className={project.starred
+                ? 'text-yellow-500 fill-yellow-500'
+                : 'text-gray-400 hover:text-yellow-500'
+              }
+            />
+          </button>
+          <Link
+            href={`/project/${project.slug}`}
+            className="flex-1 min-w-0 flex items-center gap-2"
+          >
+            <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-500 transition-colors">
+              {project.name}
+            </h3>
+          {project.suite && (
+            <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded">
+              {project.suite}
+            </span>
+          )}
           {project.bugs && project.bugs.openCount > 0 && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded" title={`${project.bugs.openCount} open bug${project.bugs.openCount > 1 ? 's' : ''}`}>
               <Bug size={12} />
@@ -48,7 +71,8 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
               {project.rcodegen.latestGrade}
             </span>
           )}
-        </Link>
+          </Link>
+        </div>
         <div className="relative ml-2" ref={menuRef}>
           <button
             onClick={() => setShowMenu(!showMenu)}

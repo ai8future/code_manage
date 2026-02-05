@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { execFile } from 'child_process';
-import path from 'path';
 import { CODE_BASE_PATH } from '@/lib/constants';
+import { createRouteLogger } from '@/lib/logger';
+import { TerminalCommandSchema } from '@/lib/schemas';
+import { parseBody } from '@/lib/api/validate';
+import { validatePath } from '@/lib/api/pathSecurity';
+
+const log = createRouteLogger('terminal');
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +17,85 @@ const ALLOWED_COMMANDS = new Set([
   'grep', 'find', 'echo', 'date', 'which'
 ]);
 
+// Dangerous arguments that could enable arbitrary code execution
+const BLOCKED_NODE_ARGS = new Set(['-e', '--eval', '-p', '--print', '--input-type', '-r', '--require']);
+const BLOCKED_NPM_SUBCOMMANDS = new Set(['exec', 'x', 'init', 'create', 'pkg']);
+const BLOCKED_NPX_ARGS = new Set(['--yes', '-y', '--package', '-p']);
+
+// Parse command string respecting quotes (handles "hello world" and 'hello world')
+function parseCommand(command: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let inQuote: string | null = null;
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+
+    if (inQuote) {
+      if (char === inQuote) {
+        inQuote = null;
+      } else {
+        current += char;
+      }
+    } else if (char === '"' || char === "'") {
+      inQuote = char;
+    } else if (char === ' ' || char === '\t') {
+      if (current) {
+        parts.push(current);
+        current = '';
+      }
+    } else {
+      current += char;
+    }
+  }
+
+  if (current) {
+    parts.push(current);
+  }
+
+  return parts;
+}
+
+function validateCommandArgs(baseCommand: string, args: string[]): string | null {
+  // Block dangerous node arguments
+  if (baseCommand === 'node') {
+    for (const arg of args) {
+      if (BLOCKED_NODE_ARGS.has(arg) || arg.startsWith('--eval=') || arg.startsWith('--require=')) {
+        return `Argument '${arg}' is not allowed for security reasons`;
+      }
+    }
+  }
+
+  // Block dangerous npm subcommands
+  if (baseCommand === 'npm' && args.length > 0) {
+    const subcommand = args[0];
+    if (BLOCKED_NPM_SUBCOMMANDS.has(subcommand)) {
+      return `npm '${subcommand}' is not allowed for security reasons`;
+    }
+  }
+
+  // Block npx with auto-install flags (could download malicious packages)
+  if (baseCommand === 'npx') {
+    for (const arg of args) {
+      if (BLOCKED_NPX_ARGS.has(arg)) {
+        return `npx argument '${arg}' is not allowed for security reasons`;
+      }
+    }
+  }
+
+  // Block yarn dlx (similar to npx)
+  if (baseCommand === 'yarn' && args.length > 0 && args[0] === 'dlx') {
+    return `yarn 'dlx' is not allowed for security reasons`;
+  }
+
+  // Block pnpm dlx (similar to npx)
+  if (baseCommand === 'pnpm' && args.length > 0 && args[0] === 'dlx') {
+    return `pnpm 'dlx' is not allowed for security reasons`;
+  }
+
+  return null; // No issues found
+}
+
 interface CommandResult {
   stdout: string;
   stderr: string;
@@ -20,27 +104,29 @@ interface CommandResult {
 
 export async function POST(request: Request) {
   try {
-    const { command, cwd } = await request.json();
+    const body = await request.json();
+    const parsed = parseBody(TerminalCommandSchema, body);
+    if (!parsed.success) return parsed.response;
+    const { command, cwd } = parsed.data;
 
-    // Validate command is a non-empty string
-    if (!command || typeof command !== 'string' || command.trim() === '') {
-      return NextResponse.json(
-        { error: 'Command is required and must be a non-empty string' },
-        { status: 400 }
-      );
-    }
-
-    // Validate cwd is within CODE_BASE_PATH to prevent path traversal
-    const resolvedCwd = path.resolve(cwd || CODE_BASE_PATH);
-    if (!resolvedCwd.startsWith(CODE_BASE_PATH)) {
+    // Validate cwd is within CODE_BASE_PATH (with symlink protection)
+    const cwdResult = await validatePath(cwd || CODE_BASE_PATH, { requireExists: false });
+    if (!cwdResult.valid) {
       return NextResponse.json(
         { error: 'Working directory must be within the code base path' },
         { status: 403 }
       );
     }
+    const resolvedCwd = cwdResult.resolvedPath;
 
-    // Parse command into base command and arguments
-    const parts = command.trim().split(/\s+/);
+    // Parse command into base command and arguments (respecting quotes)
+    const parts = parseCommand(command.trim());
+    if (parts.length === 0) {
+      return NextResponse.json(
+        { error: 'Command is required' },
+        { status: 400 }
+      );
+    }
     const baseCommand = parts[0];
     const args = parts.slice(1);
 
@@ -52,13 +138,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate arguments for potentially dangerous commands
+    const argError = validateCommandArgs(baseCommand, args);
+    if (argError) {
+      return NextResponse.json(
+        { error: argError },
+        { status: 403 }
+      );
+    }
+
     const result = await new Promise<CommandResult>((resolve) => {
       execFile(
         baseCommand,
         args,
         {
           cwd: resolvedCwd,
-          maxBuffer: 1024 * 1024 * 10, // 10MB
+          maxBuffer: 1024 * 1024 * 2, // 2MB (reduced from 10MB for security)
           timeout: 60000, // 1 minute timeout
           env: {
             ...process.env,
@@ -78,7 +173,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Terminal error:', error);
+    log.error({ err: error }, 'Terminal error');
     return NextResponse.json(
       { error: 'Failed to execute command' },
       { status: 500 }

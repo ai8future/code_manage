@@ -1,4 +1,4 @@
-import { FolderOpen, Snowflake, Archive, Bug } from 'lucide-react';
+import { FolderOpen, Snowflake, Archive, Bug, FlaskConical, Wrench } from 'lucide-react';
 import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProjectStatus } from '@/lib/types';
@@ -19,6 +19,16 @@ const STATUS_CONFIG: Record<string, {
     icon: Bug,
     status: 'crawlers',
   },
+  research: {
+    title: 'Research & Demos',
+    icon: FlaskConical,
+    status: 'research',
+  },
+  tools: {
+    title: 'Tools',
+    icon: Wrench,
+    status: 'tools',
+  },
   icebox: {
     title: 'Icebox',
     icon: Snowflake,
@@ -35,6 +45,8 @@ export async function generateStaticParams() {
   return [
     { status: 'active' },
     { status: 'crawlers' },
+    { status: 'research' },
+    { status: 'tools' },
     { status: 'icebox' },
     { status: 'archived' },
   ];

@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Terminal } from 'lucide-react';
+import { ArrowLeft, Terminal, Bot } from 'lucide-react';
 import { Project } from '@/lib/types';
 import { ActionsMenu } from '@/components/actions/ActionsMenu';
+import { MarkdownEditor } from '@/components/editor/MarkdownEditor';
 
 interface ProjectHeaderProps {
   project: Project;
@@ -13,8 +15,10 @@ interface ProjectHeaderProps {
 
 export function ProjectHeader({ project, onOpenTerminal, onRefresh }: ProjectHeaderProps) {
   const router = useRouter();
+  const [showAgentsEditor, setShowAgentsEditor] = useState(false);
 
   return (
+    <>
     <div className="flex items-center gap-4 mb-6">
       <button
         onClick={() => router.back()}
@@ -43,6 +47,15 @@ export function ProjectHeader({ project, onOpenTerminal, onRefresh }: ProjectHea
           {project.status}
         </span>
 
+        <button
+          onClick={() => setShowAgentsEditor(true)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          title="Edit AGENTS.md"
+        >
+          <Bot size={16} />
+          <span className="hidden sm:inline text-sm">AGENTS.md</span>
+        </button>
+
         {onOpenTerminal && (
           <button
             onClick={onOpenTerminal}
@@ -56,5 +69,16 @@ export function ProjectHeader({ project, onOpenTerminal, onRefresh }: ProjectHea
         <ActionsMenu project={project} onRefresh={onRefresh} />
       </div>
     </div>
+
+    {/* AGENTS.md Editor Modal */}
+    {showAgentsEditor && (
+      <MarkdownEditor
+        projectPath={project.path}
+        filename="AGENTS.md"
+        onClose={() => setShowAgentsEditor(false)}
+        onSave={() => setShowAgentsEditor(false)}
+      />
+    )}
+    </>
   );
 }

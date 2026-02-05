@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
-import path from 'path';
-import { CODE_BASE_PATH } from '@/lib/constants';
+import { createRouteLogger } from '@/lib/logger';
+import { validatePath } from '@/lib/api/pathSecurity';
+
+const log = createRouteLogger('file');
 
 export const dynamic = 'force-dynamic';
 
@@ -16,33 +18,16 @@ export async function GET(request: Request) {
     );
   }
 
-  // Security: Resolve path to prevent traversal attacks (e.g., ../../etc/passwd)
-  const resolvedPath = path.resolve(filePath);
-  if (!resolvedPath.startsWith(CODE_BASE_PATH + '/')) {
-    return NextResponse.json(
-      { error: 'Invalid path' },
-      { status: 403 }
-    );
-  }
-
-  // Security: Check real path to prevent symlink attacks
-  try {
-    const realPath = await fs.realpath(resolvedPath);
-    if (!realPath.startsWith(CODE_BASE_PATH + '/') && realPath !== CODE_BASE_PATH) {
-      return NextResponse.json(
-        { error: 'Invalid path: symlink outside allowed directory' },
-        { status: 403 }
-      );
-    }
-  } catch {
-    // File doesn't exist - will fail on read anyway
+  const pathResult = await validatePath(filePath, { requireExists: false });
+  if (!pathResult.valid) {
+    return NextResponse.json({ error: pathResult.error }, { status: pathResult.status });
   }
 
   try {
-    const content = await fs.readFile(resolvedPath, 'utf-8');
+    const content = await fs.readFile(pathResult.resolvedPath, 'utf-8');
     return NextResponse.json({ content });
   } catch (error) {
-    console.error('Error reading file:', error);
+    log.error({ err: error }, 'Error reading file');
     return NextResponse.json(
       { error: 'Failed to read file' },
       { status: 404 }

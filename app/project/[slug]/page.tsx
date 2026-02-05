@@ -9,6 +9,7 @@ import { ProjectHeader } from '@/components/project/ProjectHeader';
 import { InfoCards } from '@/components/project/InfoCards';
 import { BugsCard } from '@/components/project/BugsCard';
 import { CodeQualityCard } from '@/components/project/CodeQualityCard';
+import { DocsCard } from '@/components/project/DocsCard';
 import { ReadmePreview } from '@/components/project/ReadmePreview';
 import { TerminalPanel } from '@/components/terminal/TerminalPanel';
 
@@ -66,6 +67,7 @@ export default function ProjectPage() {
       <PageHeader
         breadcrumbs={[
           { label: 'Dashboard', href: '/' },
+          ...(project.suite ? [{ label: project.suite }] : []),
           { label: project.name },
         ]}
       />
@@ -107,6 +109,11 @@ export default function ProjectPage() {
           <CodeQualityCard rcodegen={project.rcodegen} projectPath={project.path} />
         </div>
       )}
+
+      {/* Documentation Files */}
+      <div className="mb-6">
+        <DocsCard projectPath={project.path} />
+      </div>
 
       <ReadmePreview projectPath={project.path} />
 

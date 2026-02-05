@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { scanAllProjects, scanProject } from '@/lib/scanner';
+import { scanAllProjects } from '@/lib/scanner';
 import { getProjectMetadata, setProjectMetadata } from '@/lib/config';
-import { ProjectMetadata } from '@/lib/types';
+import { createRouteLogger } from '@/lib/logger';
+import { UpdateProjectSchema } from '@/lib/schemas';
+import { parseBody } from '@/lib/api/validate';
+
+const log = createRouteLogger('projects/[slug]');
 
 export const dynamic = 'force-dynamic';
 
@@ -32,12 +36,13 @@ export async function GET(
         description: metadata.customDescription || project.description,
         tags: metadata.tags,
         notes: metadata.notes,
+        starred: metadata.starred || false,
       });
     }
 
-    return NextResponse.json(project);
+    return NextResponse.json({ ...project, starred: false });
   } catch (error) {
-    console.error('Error fetching project:', error);
+    log.error({ err: error }, 'Error fetching project');
     return NextResponse.json(
       { error: 'Failed to fetch project' },
       { status: 500 }
@@ -53,19 +58,14 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const metadata: Partial<ProjectMetadata> = {};
+    const result = parseBody(UpdateProjectSchema, body);
+    if (!result.success) return result.response;
 
-    if (body.status) metadata.status = body.status;
-    if (body.customName !== undefined) metadata.customName = body.customName;
-    if (body.customDescription !== undefined) metadata.customDescription = body.customDescription;
-    if (body.tags !== undefined) metadata.tags = body.tags;
-    if (body.notes !== undefined) metadata.notes = body.notes;
-
-    await setProjectMetadata(slug, metadata);
+    await setProjectMetadata(slug, result.data);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating project:', error);
+    log.error({ err: error }, 'Error updating project');
     return NextResponse.json(
       { error: 'Failed to update project' },
       { status: 500 }

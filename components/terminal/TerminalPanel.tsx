@@ -64,7 +64,7 @@ export function TerminalPanel({ projectPath, onClose }: TerminalPanelProps) {
           timestamp: new Date(),
         },
       ]);
-    } catch (error) {
+    } catch {
       setHistory((prev) => [
         ...prev,
         {

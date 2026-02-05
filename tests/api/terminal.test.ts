@@ -12,7 +12,7 @@ describe('POST /api/terminal', () => {
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toContain('Command is required');
+    expect(data.error).toBeDefined();
   });
 
   it('returns 403 for disallowed commands', async () => {

@@ -1,9 +1,43 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import lockfile from 'proper-lockfile';
 import { CodeManageConfig, DEFAULT_CONFIG, ProjectMetadata } from './types';
 import { getCodeBasePath } from './scanner';
 
 const CONFIG_FILENAME = '.code-manage.json';
+
+// Helper to ensure config file exists for locking
+async function ensureConfigExists(): Promise<string> {
+  const configPath = getConfigPath();
+  try {
+    await fs.access(configPath);
+  } catch {
+    // Create empty config if it doesn't exist
+    await fs.writeFile(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2), 'utf-8');
+  }
+  return configPath;
+}
+
+// Wrapper for atomic config updates with file locking
+async function withConfigLock<T>(operation: () => Promise<T>): Promise<T> {
+  const configPath = await ensureConfigExists();
+  let release: (() => Promise<void>) | null = null;
+
+  try {
+    release = await lockfile.lock(configPath, {
+      retries: {
+        retries: 5,
+        minTimeout: 100,
+        maxTimeout: 1000,
+      },
+    });
+    return await operation();
+  } finally {
+    if (release) {
+      await release();
+    }
+  }
+}
 
 function getConfigPath(): string {
   return path.join(getCodeBasePath(), CONFIG_FILENAME);
@@ -45,21 +79,25 @@ export async function setProjectMetadata(
   slug: string,
   metadata: Partial<ProjectMetadata>
 ): Promise<void> {
-  const config = await readConfig();
-  config.projects[slug] = {
-    ...config.projects[slug],
-    ...metadata,
-  };
-  await writeConfig(config);
+  await withConfigLock(async () => {
+    const config = await readConfig();
+    config.projects[slug] = {
+      ...config.projects[slug],
+      ...metadata,
+    };
+    await writeConfig(config);
+  });
 }
 
 export async function updateSettings(
   settings: Partial<CodeManageConfig['settings']>
 ): Promise<void> {
-  const config = await readConfig();
-  config.settings = {
-    ...config.settings,
-    ...settings,
-  };
-  await writeConfig(config);
+  await withConfigLock(async () => {
+    const config = await readConfig();
+    config.settings = {
+      ...config.settings,
+      ...settings,
+    };
+    await writeConfig(config);
+  });
 }

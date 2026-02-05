@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileText } from 'lucide-react';
@@ -68,6 +69,7 @@ export function ReadmePreview({ projectPath }: ReadmePreviewProps) {
       </h3>
       <div className="prose dark:prose-invert prose-sm max-w-none">
         <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
           components={{
             h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
             h2: ({ children }) => <h2 className="text-lg font-semibold mb-3 mt-6">{children}</h2>,
@@ -76,7 +78,31 @@ export function ReadmePreview({ projectPath }: ReadmePreviewProps) {
             ul: ({ children }) => <ul className="list-disc pl-5 mb-3">{children}</ul>,
             ol: ({ children }) => <ol className="list-decimal pl-5 mb-3">{children}</ol>,
             li: ({ children }) => <li className="mb-1 text-gray-700 dark:text-gray-300">{children}</li>,
-            code: ({ className, children, ...props }) => {
+            table: ({ children }) => (
+              <div className="overflow-x-auto mb-4">
+                <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children }) => (
+              <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>
+            ),
+            tbody: ({ children }) => <tbody>{children}</tbody>,
+            tr: ({ children }) => (
+              <tr className="border-b border-gray-300 dark:border-gray-600">{children}</tr>
+            ),
+            th: ({ children }) => (
+              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+                {children}
+              </th>
+            ),
+            td: ({ children }) => (
+              <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
+                {children}
+              </td>
+            ),
+            code: ({ className, children }) => {
               const match = /language-(\w+)/.exec(className || '');
               const isInline = !match && !className;
 

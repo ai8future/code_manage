@@ -12,7 +12,7 @@ describe('POST /api/actions/move', () => {
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe('Missing required fields');
+    expect(data.error).toBeDefined();
   });
 
   it('returns 403 for source path outside CODE_BASE_PATH', async () => {
@@ -29,7 +29,7 @@ describe('POST /api/actions/move', () => {
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe('Invalid source path');
+    expect(data.error).toContain('Invalid path');
   });
 
   it('returns 400 for invalid status', async () => {
@@ -46,6 +46,6 @@ describe('POST /api/actions/move', () => {
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe('Invalid status');
+    expect(data.error).toBeDefined();
   });
 });

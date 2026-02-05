@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Project, ProjectStatus, BugInfo, BugReport, RcodegenInfo, RcodegenGrade, RcodegenTaskGrade } from './types';
+import { Project, ProjectStatus, BugInfo, BugReport, RcodegenInfo, RcodegenGrade } from './types';
 import { CODE_BASE_PATH, FOLDER_TO_STATUS } from './constants';
 
 // Folders to completely ignore
@@ -394,7 +394,9 @@ export async function scanRcodegen(projectPath: string): Promise<RcodegenInfo | 
 
         try {
           const content = await fs.readFile(filePath, 'utf-8');
-          const gradeMatch = content.match(/TOTAL_SCORE:\s*(\d+(?:\.\d+)?)\s*\/\s*100/i);
+          // Limit content search to first 10KB to prevent ReDoS on large files
+          const searchContent = content.slice(0, 10240);
+          const gradeMatch = searchContent.match(/TOTAL_SCORE:\s*(\d+(?:\.\d+)?)\s*\/\s*100/i);
           if (gradeMatch) {
             grades.push({
               date: new Date(dateStr).toISOString(),
@@ -476,7 +478,20 @@ export function determineStatus(projectPath: string): ProjectStatus {
   return 'active';
 }
 
-export async function scanProject(projectPath: string): Promise<Project | null> {
+export function isSuiteDirectory(name: string): boolean {
+  return name.endsWith('_suite');
+}
+
+export function formatSuiteName(dirName: string): string {
+  // "builder_suite" -> "Builder", "app_email4ai_suite" -> "App Email4ai"
+  return dirName
+    .replace(/_suite$/, '')
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+export async function scanProject(projectPath: string, requireIndicators: boolean = true, suite?: string): Promise<Project | null> {
   const name = path.basename(projectPath);
 
   // Skip ignored folders
@@ -494,8 +509,8 @@ export async function scanProject(projectPath: string): Promise<Project | null> 
     return null;
   }
 
-  // Check if this is a project
-  if (!(await isProjectDirectory(projectPath))) {
+  // Check if this is a project (only required for active projects)
+  if (requireIndicators && !(await isProjectDirectory(projectPath))) {
     return null;
   }
 
@@ -521,6 +536,7 @@ export async function scanProject(projectPath: string): Promise<Project | null> 
     slug,
     name,
     path: projectPath,
+    suite,
     description,
     status: determineStatus(projectPath),
     techStack,
@@ -538,9 +554,10 @@ export async function scanProject(projectPath: string): Promise<Project | null> 
 
 export async function scanAllProjects(): Promise<Project[]> {
   const projects: Project[] = [];
+  const seenSlugs = new Set<string>();
 
   // Scan a single directory level for projects
-  async function scanLevel(dirPath: string): Promise<void> {
+  async function scanLevel(dirPath: string, requireIndicators: boolean, suite?: string): Promise<void> {
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
@@ -554,10 +571,28 @@ export async function scanAllProjects(): Promise<Project[]> {
         if (entry.name.startsWith('.')) continue;
         if (entry.name.startsWith('.sync-conflict')) continue;
         if (entry.name.startsWith('__')) continue; // Skip __VAULT etc.
+        if (isSuiteDirectory(entry.name)) continue; // Suites scanned separately
 
         // Check if it's a project
-        const project = await scanProject(fullPath);
+        const project = await scanProject(fullPath, requireIndicators, suite);
         if (project) {
+          // Handle slug collisions by prefixing with suite name
+          if (seenSlugs.has(project.slug)) {
+            // Retroactively prefix the first project if it's also in a suite
+            const existing = projects.find(p => p.slug === project.slug);
+            if (existing?.suite) {
+              const existingPrefix = existing.suite.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+              seenSlugs.delete(existing.slug);
+              existing.slug = `${existingPrefix}--${existing.slug}`;
+              seenSlugs.add(existing.slug);
+            }
+            // Prefix the new project if it's in a suite
+            if (suite) {
+              const suitePrefix = suite.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+              project.slug = `${suitePrefix}--${project.slug}`;
+            }
+          }
+          seenSlugs.add(project.slug);
           projects.push(project);
         }
       }
@@ -566,15 +601,31 @@ export async function scanAllProjects(): Promise<Project[]> {
     }
   }
 
-  // Scan root level (direct children of _code)
-  await scanLevel(CODE_BASE_PATH);
+  // Scan root level (direct children of _code) - require project indicators
+  // This picks up any projects still at the root level (not in suites)
+  await scanLevel(CODE_BASE_PATH, true);
 
-  // Scan status folders (_crawlers, _icebox, _old)
+  // Scan suite directories (*_suite) - require project indicators
+  try {
+    const rootEntries = await fs.readdir(CODE_BASE_PATH, { withFileTypes: true });
+    for (const entry of rootEntries) {
+      if (!entry.isDirectory()) continue;
+      if (!isSuiteDirectory(entry.name)) continue;
+
+      const suitePath = path.join(CODE_BASE_PATH, entry.name);
+      const suiteName = formatSuiteName(entry.name);
+      await scanLevel(suitePath, true, suiteName);
+    }
+  } catch {
+    // Ignore permission errors
+  }
+
+  // Scan status folders (_crawlers, _icebox, _old, _research_and_demos) - no indicators required
   for (const folderName of Object.keys(FOLDER_TO_STATUS)) {
     const statusPath = path.join(CODE_BASE_PATH, folderName);
     try {
       await fs.access(statusPath);
-      await scanLevel(statusPath);
+      await scanLevel(statusPath, false);
     } catch {
       // Folder doesn't exist, skip
     }

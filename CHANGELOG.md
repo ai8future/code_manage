@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-05
+
+### Added
+- Suite directory support: scanner discovers projects inside `*_suite` directories (e.g., `builder_suite/code_manage`)
+  - Suite badge shown on project cards and sidebar entries
+  - Suite name in project detail breadcrumbs
+  - Slug collision handling when projects in different suites share a name
+  - Move route preserves suite affiliation when changing project status
+- Activity page with commit history and velocity APIs
+- Search page with full-text project search API
+- Config page for app settings
+- Agents page
+- Project creation API and new project modal
+- Docs card with docs listing/viewing API
+- Markdown editor component with syntax highlighting
+- Structured logging with pino (`lib/logger.ts`)
+- Zod-based request validation (`lib/schemas.ts`, `lib/api/validate.ts`)
+- Path security middleware (`lib/api/pathSecurity.ts`)
+- Environment config with Zod validation (`lib/env.ts`)
+- Git utilities for commit history (`lib/git.ts`)
+- Port utilities (`lib/ports.ts`)
+- Test helpers and new test suites for env, schemas, pathSecurity
+
+### Changed
+- Migrated ESLint config from `.eslintrc.json` to flat config (`eslint.config.mjs`)
+- Sidebar project lists now show starred projects first
+- Star/unstar toggle added to sidebar and project cards
+- Project status types expanded with `research` and `tools` categories
+
+### Fixed
+- Path security test updated for new `builder_suite/` directory structure
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.0.6] - 2026-01-28
 
 ### Refactored

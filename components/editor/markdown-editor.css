@@ -1,0 +1,52 @@
+.w-md-editor {
+  border-radius: 12px !important;
+  border: 2px solid #e5e7eb !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.w-md-editor-toolbar {
+  background: linear-gradient(to right, #f8fafc, #f1f5f9) !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+  min-height: 56px !important;
+}
+
+.w-md-editor-toolbar li > button {
+  height: 36px !important;
+  width: 36px !important;
+  margin: 0 2px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.w-md-editor-toolbar li > button:hover {
+  background: #e0e7ff !important;
+}
+
+.w-md-editor-toolbar li > button svg {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+}
+
+.w-md-editor-toolbar-divider {
+  height: 28px !important;
+  margin: 0 8px !important;
+}
+
+.w-md-editor-content {
+  background: white !important;
+}
+
+.w-md-editor-text-pre > code,
+.w-md-editor-text-input {
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+}
+
+.wmde-markdown {
+  background: white !important;
+  padding: 20px !important;
+}

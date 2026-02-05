@@ -9,16 +9,26 @@ import {
   PanelLeftClose,
   PanelLeft,
   LayoutDashboard,
-  Bug
+  Bug,
+  Zap,
+  SlidersHorizontal,
+  FlaskConical,
+  Wrench,
+  Activity,
+  Search,
+  Plus
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { SidebarItem } from './SidebarItem';
 import { SidebarProjectList } from './SidebarProjectList';
+import { NewProjectModal } from '@/components/modals/NewProjectModal';
 import { ProjectStatus } from '@/lib/types';
 
 interface ProjectCounts {
   active: number;
   crawlers: number;
+  research: number;
+  tools: number;
   icebox: number;
   archived: number;
 }
@@ -27,9 +37,10 @@ interface SidebarProps {
   counts?: ProjectCounts;
 }
 
-export function Sidebar({ counts = { active: 0, crawlers: 0, icebox: 0, archived: 0 } }: SidebarProps) {
+export function Sidebar({ counts = { active: 0, crawlers: 0, research: 0, tools: 0, icebox: 0, archived: 0 } }: SidebarProps) {
   const { collapsed, toggleCollapsed } = useSidebar();
   const [expandedStatus, setExpandedStatus] = useState<ProjectStatus | null>(null);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   const handleToggle = (status: ProjectStatus) => {
     setExpandedStatus(expandedStatus === status ? null : status);
@@ -69,12 +80,49 @@ export function Sidebar({ counts = { active: 0, crawlers: 0, icebox: 0, archived
 
       {/* Navigation */}
       <nav className="flex-1 p-2 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 space-y-1">
           <SidebarItem
             href="/"
             icon={LayoutDashboard}
             label="Dashboard"
           />
+          <SidebarItem
+            href="/activity"
+            icon={Activity}
+            label="Activity"
+          />
+          <SidebarItem
+            href="/search"
+            icon={Search}
+            label="Search"
+          />
+          <SidebarItem
+            href="/agents"
+            icon={Zap}
+            label="Agents"
+          />
+          <SidebarItem
+            href="/config"
+            icon={SlidersHorizontal}
+            label="Config"
+          />
+        </div>
+
+        {/* New Project Button */}
+        <div className="flex-shrink-0 mt-2">
+          <button
+            onClick={() => setShowNewProjectModal(true)}
+            className={`
+              w-full flex items-center gap-2 px-3 py-2 rounded-lg
+              bg-blue-600 hover:bg-blue-700 text-white
+              transition-colors font-medium text-sm
+              ${collapsed ? 'justify-center' : ''}
+            `}
+            title="New Project"
+          >
+            <Plus size={18} />
+            {!collapsed && <span>New Project</span>}
+          </button>
         </div>
 
         <div className={`my-3 flex-shrink-0 ${collapsed ? 'mx-2' : 'mx-3'}`}>
@@ -99,6 +147,24 @@ export function Sidebar({ counts = { active: 0, crawlers: 0, icebox: 0, archived
             badge={counts.crawlers}
             expanded={expandedStatus === 'crawlers'}
             onToggle={() => handleToggle('crawlers')}
+          />
+          <SidebarProjectList
+            href="/research"
+            icon={FlaskConical}
+            label="Research & Demos"
+            status="research"
+            badge={counts.research}
+            expanded={expandedStatus === 'research'}
+            onToggle={() => handleToggle('research')}
+          />
+          <SidebarProjectList
+            href="/tools"
+            icon={Wrench}
+            label="Tools"
+            status="tools"
+            badge={counts.tools}
+            expanded={expandedStatus === 'tools'}
+            onToggle={() => handleToggle('tools')}
           />
           <SidebarProjectList
             href="/icebox"
@@ -129,6 +195,16 @@ export function Sidebar({ counts = { active: 0, crawlers: 0, icebox: 0, archived
           label="Settings"
         />
       </div>
+
+      {/* New Project Modal */}
+      <NewProjectModal
+        isOpen={showNewProjectModal}
+        onClose={() => setShowNewProjectModal(false)}
+        onSuccess={() => {
+          // Could trigger a refresh of the project list here
+          window.location.reload();
+        }}
+      />
     </aside>
   );
 }

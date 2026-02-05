@@ -19,6 +19,7 @@ interface ProjectsResponse {
   counts: {
     active: number;
     crawlers: number;
+    research: number;
     icebox: number;
     archived: number;
   };
@@ -78,6 +79,34 @@ export function ProjectGrid({ status, title, showSearch = true }: ProjectGridPro
   const handleOpenInEditor = (project: Project) => openInEditor(project.path);
   const handleOpenInFinder = (project: Project) => openInFinder(project.path);
   const handleCopyPath = (project: Project) => copyPath(project.path);
+
+  const handleToggleStar = async (project: Project) => {
+    try {
+      const response = await fetch(`/api/projects/${project.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ starred: !project.starred }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update project');
+
+      // Optimistically update the local state
+      const updatedProjects = projects.map((p) =>
+        p.slug === project.slug ? { ...p, starred: !p.starred } : p
+      );
+
+      // Re-sort: starred first, then by name
+      updatedProjects.sort((a, b) => {
+        if (a.starred && !b.starred) return -1;
+        if (!a.starred && b.starred) return 1;
+        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+      });
+
+      setProjects(updatedProjects);
+    } catch (err) {
+      console.error('Failed to toggle star:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -152,6 +181,7 @@ export function ProjectGrid({ status, title, showSearch = true }: ProjectGridPro
                 onOpenInEditor={handleOpenInEditor}
                 onOpenInFinder={handleOpenInFinder}
                 onCopyPath={handleCopyPath}
+                onToggleStar={handleToggleStar}
               />
             </div>
           ))}

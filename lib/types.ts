@@ -1,4 +1,4 @@
-export type ProjectStatus = 'active' | 'crawlers' | 'icebox' | 'archived';
+export type ProjectStatus = 'active' | 'crawlers' | 'research' | 'tools' | 'icebox' | 'archived';
 
 export interface BugReport {
   filename: string;
@@ -46,6 +46,7 @@ export interface Project {
   slug: string;
   name: string;
   path: string;
+  suite?: string;
   description?: string;
   status: ProjectStatus;
   techStack: string[];
@@ -58,6 +59,7 @@ export interface Project {
   scripts?: Record<string, string>;
   bugs?: BugInfo;
   rcodegen?: RcodegenInfo;
+  starred?: boolean;
 }
 
 export interface ProjectMetadata {
@@ -66,6 +68,7 @@ export interface ProjectMetadata {
   customDescription?: string;
   tags?: string[];
   notes?: string;
+  starred?: boolean;
 }
 
 export interface CodeManageConfig {

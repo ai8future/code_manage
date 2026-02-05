@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Bug, CheckCircle, ChevronDown, ChevronRight, ExternalLink, X, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { BugInfo, BugReport } from '@/lib/types';
@@ -44,7 +45,7 @@ function BugModal({ bug, projectPath, onClose, onOpenInEditor }: BugModalProps) 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700/50 w-full max-w-3xl max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700/50 w-[80%] max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -88,8 +89,33 @@ function BugModal({ bug, projectPath, onClose, onOpenInEditor }: BugModalProps) 
           {content && (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
-                  code: ({ className, children, ...props }) => {
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto mb-4">
+                      <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  thead: ({ children }) => (
+                    <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>
+                  ),
+                  tbody: ({ children }) => <tbody>{children}</tbody>,
+                  tr: ({ children }) => (
+                    <tr className="border-b border-gray-300 dark:border-gray-600">{children}</tr>
+                  ),
+                  th: ({ children }) => (
+                    <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
+                      {children}
+                    </td>
+                  ),
+                  code: ({ className, children }) => {
                     const match = /language-(\w+)/.exec(className || '');
                     const isInline = !match && !className;
 

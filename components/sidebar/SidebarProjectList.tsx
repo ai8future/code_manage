@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, ChevronRight, LucideIcon, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, LucideIcon, Loader2, Star } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { Project, ProjectStatus } from '@/lib/types';
 
@@ -41,10 +41,8 @@ export function SidebarProjectList({
       fetch(`/api/projects?status=${status}`)
         .then((res) => res.json())
         .then((data) => {
-          const sorted = [...data.projects].sort((a: Project, b: Project) =>
-            a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-          );
-          setProjects(sorted);
+          // API already sorts: starred first, then by name
+          setProjects(data.projects);
           setLoaded(true);
         })
         .catch(() => {})
@@ -57,14 +55,38 @@ export function SidebarProjectList({
       fetch(`/api/projects?status=${status}`)
         .then((res) => res.json())
         .then((data) => {
-          const sorted = [...data.projects].sort((a: Project, b: Project) =>
-            a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-          );
-          setProjects(sorted);
+          // API already sorts: starred first, then by name
+          setProjects(data.projects);
         })
         .catch(() => {});
     }
   }, [isActive]);
+
+  const handleToggleStar = async (e: React.MouseEvent, project: Project) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const response = await fetch(`/api/projects/${project.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ starred: !project.starred }),
+      });
+      if (response.ok) {
+        // Update and re-sort locally: starred first, then by name
+        const updated = projects.map((p) =>
+          p.slug === project.slug ? { ...p, starred: !p.starred } : p
+        );
+        updated.sort((a, b) => {
+          if (a.starred && !b.starred) return -1;
+          if (!a.starred && b.starred) return 1;
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        });
+        setProjects(updated);
+      }
+    } catch {
+      // Silently fail
+    }
+  };
 
   const handleToggle = (e: React.MouseEvent) => {
     if (collapsed) return;
@@ -138,21 +160,43 @@ export function SidebarProjectList({
             </div>
           ) : (
             projects.map((project) => (
-              <Link
+              <div
                 key={project.slug}
-                href={`/project/${project.slug}`}
                 className={`
-                  block px-3 py-1.5 text-sm rounded truncate
+                  flex items-center gap-1 px-3 py-1.5 text-sm rounded
                   transition-colors duration-150
                   ${isProjectActive(project.slug)
                     ? 'bg-blue-500/10 text-blue-500 font-medium'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }
                 `}
-                title={project.name}
               >
-                {project.name}
-              </Link>
+                <button
+                  onClick={(e) => handleToggleStar(e, project)}
+                  className="flex-shrink-0 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  title={project.starred ? 'Unstar' : 'Star'}
+                >
+                  <Star
+                    size={12}
+                    className={project.starred
+                      ? 'text-yellow-500 fill-yellow-500'
+                      : 'text-gray-400 hover:text-yellow-500'
+                    }
+                  />
+                </button>
+                <Link
+                  href={`/project/${project.slug}`}
+                  className={`flex-1 truncate hover:underline ${project.starred ? 'font-semibold' : ''}`}
+                  title={project.suite ? `${project.name} (${project.suite})` : project.name}
+                >
+                  {project.name}
+                  {project.suite && (
+                    <span className="ml-1 text-[10px] text-gray-400 dark:text-gray-500 font-normal">
+                      {project.suite}
+                    </span>
+                  )}
+                </Link>
+              </div>
             ))
           )}
         </div>
