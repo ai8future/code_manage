@@ -1,0 +1,16 @@
+Tool:      rclaude
+Model:  opus
+Codebase:  code_manage
+Output:    /Users/cliff/Desktop/_code/code_manage/_rcodegen
+Command:   rclaude -m opus suite
+Started:   2026-01-28 12:32:38
+Ended:     2026-01-28 12:47:18
+Duration:  14m 40s
+Exit Code: 0
+
+--- Token Usage ---
+Input:     9
+Output:    7248
+Cache Read: 148761
+Cache Create: 29653
+Cost:      $0.5736
