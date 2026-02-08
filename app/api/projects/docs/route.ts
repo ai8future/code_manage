@@ -3,6 +3,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { CODE_BASE_PATH } from '@/lib/constants';
+import { validationError, forbiddenError } from '@/lib/chassis/errors';
+import { errorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,14 +51,14 @@ export async function GET(request: Request) {
   const projectPath = searchParams.get('path');
 
   if (!projectPath) {
-    return NextResponse.json({ error: 'Path is required' }, { status: 400 });
+    return errorResponse(validationError('Path is required'));
   }
 
   // Validate path is within CODE_BASE_PATH
   const resolvedPath = path.resolve(projectPath);
   const realPath = await fs.realpath(resolvedPath).catch(() => resolvedPath);
   if (!realPath.startsWith(CODE_BASE_PATH + '/') && realPath !== CODE_BASE_PATH) {
-    return NextResponse.json({ error: 'Invalid path' }, { status: 403 });
+    return errorResponse(forbiddenError('Invalid path'));
   }
 
   // Helper function to scan a directory for markdown files
@@ -127,8 +129,6 @@ export async function GET(request: Request) {
     const projectDocs = await scanDirectory(resolvedPath, 'project');
 
     // Determine the vault path for this project
-    // Project path: /Users/cliff/Desktop/_code/my_project or /Users/cliff/Desktop/_code/_icebox/my_project
-    // Vault path: /Users/cliff/Desktop/_code/__VAULT/my_project
     const projectName = path.basename(resolvedPath);
     const vaultDir = path.join(CODE_BASE_PATH, '__VAULT', projectName);
 
@@ -154,7 +154,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({ docs });
-  } catch {
-    return NextResponse.json({ docs: [] });
+  } catch (error) {
+    return NextResponse.json({ docs: [], detail: 'Failed to scan docs' }, { status: 500 });
   }
 }

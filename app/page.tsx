@@ -1,4 +1,4 @@
-import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
+import { ProjectTable } from '@/components/dashboard/ProjectTable';
 import { CodeHealthSection } from '@/components/dashboard/CodeHealthSection';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SectionDivider } from '@/components/layout/SectionDivider';
@@ -15,7 +15,7 @@ export default function Home() {
         Your projects from ~/Desktop/_code/
       </p>
 
-      <ProjectGrid title="All Projects" showSearch />
+      <ProjectTable excludeStatuses={['icebox', 'archived']} />
 
       <SectionDivider label="Code Health" />
 

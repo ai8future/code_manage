@@ -78,7 +78,7 @@ export function NewProjectModal({ isOpen, onClose, onSuccess }: NewProjectModalP
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create project');
+        setError(data.detail || 'Failed to create project');
         return;
       }
 

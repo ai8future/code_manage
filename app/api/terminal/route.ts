@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { CODE_BASE_PATH } from '@/lib/constants';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { TerminalCommandSchema } from '@/lib/schemas';
-import { parseBody } from '@/lib/api/validate';
+import { parseSecureBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
-
-const log = createRouteLogger('terminal');
+import { validationError, forbiddenError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,48 +103,40 @@ interface CommandResult {
 }
 
 export async function POST(request: Request) {
+  const log = createRequestLogger('terminal', request);
+
   try {
-    const body = await request.json();
-    const parsed = parseBody(TerminalCommandSchema, body);
+    const rawBody = await request.text();
+    const parsed = parseSecureBody(TerminalCommandSchema, rawBody);
     if (!parsed.success) return parsed.response;
     const { command, cwd } = parsed.data;
 
     // Validate cwd is within CODE_BASE_PATH (with symlink protection)
     const cwdResult = await validatePath(cwd || CODE_BASE_PATH, { requireExists: false });
     if (!cwdResult.valid) {
-      return NextResponse.json(
-        { error: 'Working directory must be within the code base path' },
-        { status: 403 }
-      );
+      return pathErrorResponse('Working directory must be within the code base path', 403);
     }
     const resolvedCwd = cwdResult.resolvedPath;
 
     // Parse command into base command and arguments (respecting quotes)
     const parts = parseCommand(command.trim());
     if (parts.length === 0) {
-      return NextResponse.json(
-        { error: 'Command is required' },
-        { status: 400 }
-      );
+      return errorResponse(validationError('Command is required'));
     }
     const baseCommand = parts[0];
     const args = parts.slice(1);
 
     // Check if command is in whitelist
     if (!ALLOWED_COMMANDS.has(baseCommand)) {
-      return NextResponse.json(
-        { error: `Command '${baseCommand}' is not allowed` },
-        { status: 403 }
+      return errorResponse(
+        forbiddenError(`Command '${baseCommand}' is not allowed`)
       );
     }
 
     // Validate arguments for potentially dangerous commands
     const argError = validateCommandArgs(baseCommand, args);
     if (argError) {
-      return NextResponse.json(
-        { error: argError },
-        { status: 403 }
-      );
+      return errorResponse(forbiddenError(argError));
     }
 
     const result = await new Promise<CommandResult>((resolve) => {
@@ -174,9 +166,6 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     log.error({ err: error }, 'Terminal error');
-    return NextResponse.json(
-      { error: 'Failed to execute command' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

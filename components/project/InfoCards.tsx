@@ -32,6 +32,12 @@ export function InfoCards({ project }: InfoCardsProps) {
               <TechBadge key={tech} tech={tech} />
             ))}
           </div>
+          {project.chassisVersion && (
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex items-center gap-2">
+              <span className="text-sm text-gray-500">Chassis:</span>
+              <span className="text-sm font-mono text-purple-600 dark:text-purple-400">{project.chassisVersion}</span>
+            </div>
+          )}
         </div>
       )}
 

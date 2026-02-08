@@ -1,34 +1,37 @@
 import { NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { createRouteLogger } from '@/lib/logger';
+import { z } from 'zod';
+import { createRequestLogger } from '@/lib/logger';
 import { validatePath } from '@/lib/api/pathSecurity';
+import { parseSecureBody } from '@/lib/api/validate';
+import { handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 const execFileAsync = promisify(execFile);
 
-export function createOpenActionRoute(command: string, commandArgs: string[] = []) {
-  const log = createRouteLogger(`open/${command}`);
-  return async function POST(request: Request) {
-    try {
-      const { path: targetPath } = await request.json();
+const openActionSchema = z.object({
+  path: z.string().min(1, 'Path is required'),
+});
 
-      if (!targetPath || typeof targetPath !== 'string') {
-        return NextResponse.json({ error: 'Path is required' }, { status: 400 });
-      }
+export function createOpenActionRoute(command: string, commandArgs: string[] = []) {
+  return async function POST(request: Request) {
+    const log = createRequestLogger(`open/${command}`, request);
+    try {
+      const rawBody = await request.text();
+      const result = parseSecureBody(openActionSchema, rawBody);
+      if (!result.success) return result.response;
+      const { path: targetPath } = result.data;
 
       const pathResult = await validatePath(targetPath);
       if (!pathResult.valid) {
-        return NextResponse.json({ error: pathResult.error }, { status: pathResult.status });
+        return pathErrorResponse(pathResult.error, pathResult.status);
       }
 
       await execFileAsync(command, [...commandArgs, pathResult.resolvedPath]);
       return NextResponse.json({ success: true });
     } catch (error) {
       log.error({ err: error }, `Failed to execute ${command}`);
-      return NextResponse.json(
-        { error: `Failed to execute ${command}` },
-        { status: 500 }
-      );
+      return handleRouteError(error);
     }
   };
 }

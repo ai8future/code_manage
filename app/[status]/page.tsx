@@ -1,5 +1,6 @@
 import { FolderOpen, Snowflake, Archive, Bug, FlaskConical, Wrench } from 'lucide-react';
 import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
+import { ProjectTable } from '@/components/dashboard/ProjectTable';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProjectStatus } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -8,6 +9,7 @@ const STATUS_CONFIG: Record<string, {
   title: string;
   icon: typeof FolderOpen;
   status: ProjectStatus;
+  useTable?: boolean;
 }> = {
   active: {
     title: 'Active Projects',
@@ -33,11 +35,13 @@ const STATUS_CONFIG: Record<string, {
     title: 'Icebox',
     icon: Snowflake,
     status: 'icebox',
+    useTable: true,
   },
   archived: {
     title: 'Archived',
     icon: Archive,
     status: 'archived',
+    useTable: true,
   },
 };
 
@@ -74,7 +78,11 @@ export default async function StatusPage({
         title={config.title}
       />
 
-      <ProjectGrid status={config.status} showSearch />
+      {config.useTable ? (
+        <ProjectTable title={config.title} status={config.status} />
+      ) : (
+        <ProjectGrid status={config.status} showSearch />
+      )}
     </div>
   );
 }

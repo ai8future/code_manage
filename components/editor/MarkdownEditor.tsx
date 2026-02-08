@@ -53,8 +53,8 @@ export function MarkdownEditor({ projectPath, filename, onClose, onSave }: Markd
         // Avoid state updates if component unmounted
         if (cancelled) return;
 
-        if (data.error && !data.isNew) {
-          setError(data.error);
+        if (data.detail && !data.isNew) {
+          setError(data.detail);
           return;
         }
 
@@ -120,8 +120,8 @@ Brief description of this project for AI assistants.
 
       const data = await response.json();
 
-      if (!response.ok || data.error) {
-        throw new Error(data.error || 'Failed to save');
+      if (!response.ok || data.detail) {
+        throw new Error(data.detail || 'Failed to save');
       }
 
       setHasChanges(false);

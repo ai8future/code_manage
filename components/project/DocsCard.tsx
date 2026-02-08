@@ -42,8 +42,8 @@ function DocModal({ doc, projectPath, onClose, onOpenInEditor, onEdit }: DocModa
     fetch(`/api/file?path=${encodeURIComponent(filePath)}`)
       .then(res => res.json())
       .then(data => {
-        if (data.error) {
-          setError(data.error);
+        if (data.detail) {
+          setError(data.detail);
         } else {
           // Strip front-matter from content for display
           let rawContent = data.content;

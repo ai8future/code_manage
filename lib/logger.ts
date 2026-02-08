@@ -1,9 +1,18 @@
+// Adapted from @ai8future/logger — structured JSON logging with sensitive field redaction
 import pino from 'pino';
 import { env } from './env';
 
 const logger = pino({
-  level: env.LOG_LEVEL,
-  ...(env.NODE_ENV === 'development'
+  level: env.logLevel,
+  timestamp: pino.stdTimeFunctions.isoTime,
+  redact: {
+    paths: [
+      'password', 'token', 'secret', 'authorization', 'cookie',
+      '*.password', '*.token', '*.secret', '*.key',
+    ],
+    censor: '[Redacted]',
+  },
+  ...(env.nodeEnv === 'development'
     ? {
         transport: {
           target: 'pino-pretty',

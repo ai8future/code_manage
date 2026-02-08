@@ -114,7 +114,8 @@ export function Sidebar({ counts = { active: 0, crawlers: 0, research: 0, tools:
             onClick={() => setShowNewProjectModal(true)}
             className={`
               w-full flex items-center gap-2 px-3 py-2 rounded-lg
-              bg-blue-600 hover:bg-blue-700 text-white
+              border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400
+              hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200
               transition-colors font-medium text-sm
               ${collapsed ? 'justify-center' : ''}
             `}

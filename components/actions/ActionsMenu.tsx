@@ -68,7 +68,7 @@ export function ActionsMenu({ project, onRefresh }: ActionsMenuProps) {
         router.push(`/${newStatus}`);
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to move project');
+        alert(error.detail || 'Failed to move project');
       }
     } catch (err) {
       console.error('Failed to move project:', err);

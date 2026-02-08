@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { scanAllProjects } from '@/lib/scanner';
 import { getProjectMetadata, setProjectMetadata } from '@/lib/config';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { UpdateProjectSchema } from '@/lib/schemas';
-import { parseBody } from '@/lib/api/validate';
-
-const log = createRouteLogger('projects/[slug]');
+import { parseSecureBody } from '@/lib/api/validate';
+import { notFoundError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +13,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const log = createRequestLogger('projects/[slug]', request);
   const { slug } = await params;
 
   try {
@@ -20,10 +21,7 @@ export async function GET(
     const project = projects.find((p) => p.slug === slug);
 
     if (!project) {
-      return NextResponse.json(
-        { error: 'Project not found' },
-        { status: 404 }
-      );
+      return errorResponse(notFoundError('Project not found'));
     }
 
     // Apply custom metadata
@@ -43,10 +41,7 @@ export async function GET(
     return NextResponse.json({ ...project, starred: false });
   } catch (error) {
     log.error({ err: error }, 'Error fetching project');
-    return NextResponse.json(
-      { error: 'Failed to fetch project' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }
 
@@ -54,11 +49,12 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const log = createRequestLogger('projects/[slug]', request);
   const { slug } = await params;
 
   try {
-    const body = await request.json();
-    const result = parseBody(UpdateProjectSchema, body);
+    const rawBody = await request.text();
+    const result = parseSecureBody(UpdateProjectSchema, rawBody);
     if (!result.success) return result.response;
 
     await setProjectMetadata(slug, result.data);
@@ -66,9 +62,6 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   } catch (error) {
     log.error({ err: error }, 'Error updating project');
-    return NextResponse.json(
-      { error: 'Failed to update project' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

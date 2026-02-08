@@ -32,8 +32,8 @@ function BugModal({ bug, projectPath, onClose, onOpenInEditor }: BugModalProps) 
     fetch(`/api/file?path=${encodeURIComponent(filePath)}`)
       .then(res => res.json())
       .then(data => {
-        if (data.error) {
-          setError(data.error);
+        if (data.detail) {
+          setError(data.detail);
         } else {
           setContent(data.content);
         }

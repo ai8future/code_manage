@@ -8,7 +8,7 @@ describe('GET /api/projects/readme', () => {
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe('Path is required');
+    expect(data.detail).toBe('Path is required');
   });
 
   it('returns 403 for path traversal attempts', async () => {
@@ -19,7 +19,7 @@ describe('GET /api/projects/readme', () => {
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe('Invalid path');
+    expect(data.detail).toBe('Invalid path');
   });
 
   it('returns 403 for paths outside CODE_BASE_PATH', async () => {
@@ -39,6 +39,6 @@ describe('GET /api/projects/readme', () => {
 
     expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data.error).toBe('README not found');
+    expect(data.detail).toBe('README not found');
   });
 });

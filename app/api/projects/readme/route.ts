@@ -2,29 +2,27 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { CODE_BASE_PATH } from '@/lib/constants';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { validatePath } from '@/lib/api/pathSecurity';
-
-const log = createRouteLogger('projects/readme');
+import { validationError, notFoundError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
 const README_FILES = ['README.md', 'readme.md', 'Readme.md', 'README.txt', 'README'];
 
 export async function GET(request: Request) {
+  const log = createRequestLogger('projects/readme', request);
   const { searchParams } = new URL(request.url);
   const projectPath = searchParams.get('path');
 
   if (!projectPath) {
-    return NextResponse.json(
-      { error: 'Path is required' },
-      { status: 400 }
-    );
+    return errorResponse(validationError('Path is required'));
   }
 
   const pathResult = await validatePath(projectPath, { requireExists: false });
   if (!pathResult.valid) {
-    return NextResponse.json({ error: pathResult.error }, { status: pathResult.status });
+    return pathErrorResponse(pathResult.error, pathResult.status);
   }
 
   try {
@@ -43,15 +41,9 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json(
-      { error: 'README not found' },
-      { status: 404 }
-    );
+    return errorResponse(notFoundError('README not found'));
   } catch (error) {
     log.error({ err: error }, 'Error reading README');
-    return NextResponse.json(
-      { error: 'Failed to read README' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

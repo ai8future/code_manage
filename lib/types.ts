@@ -51,6 +51,7 @@ export interface Project {
   status: ProjectStatus;
   techStack: string[];
   version?: string;
+  chassisVersion?: string;
   lastModified: string;
   gitBranch?: string;
   gitRemote?: string;

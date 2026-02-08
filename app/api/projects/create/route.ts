@@ -4,34 +4,34 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { CODE_BASE_PATH, STATUS_FOLDERS } from '@/lib/constants';
 import { API_LIMITS } from '@/lib/activity-types';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { CreateProjectSchema } from '@/lib/schemas';
-import { parseBody } from '@/lib/api/validate';
-
-const log = createRouteLogger('projects/create');
+import { parseSecureBody } from '@/lib/api/validate';
+import { validationError, conflictError, internalError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const log = createRequestLogger('projects/create', request);
+
   try {
-    const body = await request.json();
-    const parsed = parseBody(CreateProjectSchema, body);
+    const rawBody = await request.text();
+    const parsed = parseSecureBody(CreateProjectSchema, rawBody);
     if (!parsed.success) return parsed.response;
     const { name, description, category } = parsed.data;
 
     // Validate name length (filesystem limit ~255, but keep reasonable)
     if (name.length > API_LIMITS.PROJECT_NAME_MAX_LENGTH) {
-      return NextResponse.json(
-        { error: `Project name must be ${API_LIMITS.PROJECT_NAME_MAX_LENGTH} characters or less` },
-        { status: 400 }
+      return errorResponse(
+        validationError(`Project name must be ${API_LIMITS.PROJECT_NAME_MAX_LENGTH} characters or less`)
       );
     }
 
     // Limit description length
     if (description.length > API_LIMITS.PROJECT_DESCRIPTION_MAX_LENGTH) {
-      return NextResponse.json(
-        { error: `Description must be ${API_LIMITS.PROJECT_DESCRIPTION_MAX_LENGTH} characters or less` },
-        { status: 400 }
+      return errorResponse(
+        validationError(`Description must be ${API_LIMITS.PROJECT_DESCRIPTION_MAX_LENGTH} characters or less`)
       );
     }
 
@@ -44,9 +44,8 @@ export async function POST(request: Request) {
     // Check if directory already exists
     try {
       await fs.access(targetDir);
-      return NextResponse.json(
-        { error: 'A project with this name already exists in this category' },
-        { status: 409 }
+      return errorResponse(
+        conflictError('A project with this name already exists in this category')
       );
     } catch {
       // Directory doesn't exist, which is what we want
@@ -119,22 +118,17 @@ export async function POST(request: Request) {
 
       // Check if ralph is not installed
       if (errorMessage.includes('ENOENT') || errorMessage.includes('spawn ralph')) {
-        return NextResponse.json(
-          { error: 'ralph CLI is not installed or not in PATH' },
-          { status: 500 }
+        return errorResponse(
+          internalError('ralph CLI is not installed or not in PATH')
         );
       }
 
-      return NextResponse.json(
-        { error: `Project generation failed: ${errorMessage.slice(0, 500)}` },
-        { status: 500 }
+      return errorResponse(
+        internalError(`Project generation failed: ${errorMessage.slice(0, 500)}`)
       );
     }
   } catch (error) {
     log.error({ err: error }, 'Error creating project');
-    return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

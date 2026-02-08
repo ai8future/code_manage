@@ -2,7 +2,7 @@ import { ProjectStatus } from './types';
 import { env } from './env';
 
 // CODE_BASE_PATH: Zod-validated from lib/env.ts
-export const CODE_BASE_PATH = env.CODE_BASE_PATH;
+export const CODE_BASE_PATH = env.codeBasePath;
 
 // Status folder mappings: status → folder name (null for root level)
 export const STATUS_FOLDERS: Record<ProjectStatus, string | null> = {

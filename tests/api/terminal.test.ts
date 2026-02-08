@@ -12,7 +12,7 @@ describe('POST /api/terminal', () => {
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBeDefined();
+    expect(data.detail).toBeDefined();
   });
 
   it('returns 403 for disallowed commands', async () => {
@@ -25,7 +25,7 @@ describe('POST /api/terminal', () => {
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toContain('not allowed');
+    expect(data.detail).toContain('not allowed');
   });
 
   it('returns 403 for invalid cwd outside CODE_BASE_PATH', async () => {
@@ -38,7 +38,7 @@ describe('POST /api/terminal', () => {
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toContain('within');
+    expect(data.detail).toContain('within');
   });
 
   it('allows whitelisted commands', async () => {

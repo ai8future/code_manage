@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { DocFileSchema } from '@/lib/schemas';
-import { parseBody } from '@/lib/api/validate';
+import { parseSecureBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
-
-const log = createRouteLogger('projects/docs/[filename]');
+import { validationError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,26 +16,27 @@ interface RouteParams {
 }
 
 export async function GET(request: Request, { params }: RouteParams) {
+  const log = createRequestLogger('projects/docs/[filename]', request);
   const { filename } = await params;
   const { searchParams } = new URL(request.url);
   const projectPath = searchParams.get('path');
 
   if (!projectPath) {
-    return NextResponse.json({ error: 'Path is required' }, { status: 400 });
+    return errorResponse(validationError('Path is required'));
   }
 
   if (!filename) {
-    return NextResponse.json({ error: 'Filename is required' }, { status: 400 });
+    return errorResponse(validationError('Filename is required'));
   }
 
   // Validate filename (prevent directory traversal)
   if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
-    return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
+    return errorResponse(validationError('Invalid filename'));
   }
 
   const validation = await validatePath(projectPath, { requireExists: false });
   if (!validation.valid) {
-    return NextResponse.json({ error: validation.error }, { status: validation.status });
+    return pathErrorResponse(validation.error, validation.status);
   }
 
   const filePath = path.join(validation.resolvedPath, filename);
@@ -62,38 +63,39 @@ export async function GET(request: Request, { params }: RouteParams) {
       });
     }
     log.error({ err }, 'Error reading doc file');
-    return NextResponse.json({ error: 'Failed to read file' }, { status: 500 });
+    return handleRouteError(err);
   }
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
+  const log = createRequestLogger('projects/docs/[filename]', request);
   const { filename } = await params;
   const { searchParams } = new URL(request.url);
   const projectPath = searchParams.get('path');
 
   if (!projectPath) {
-    return NextResponse.json({ error: 'Path is required' }, { status: 400 });
+    return errorResponse(validationError('Path is required'));
   }
 
   if (!filename) {
-    return NextResponse.json({ error: 'Filename is required' }, { status: 400 });
+    return errorResponse(validationError('Filename is required'));
   }
 
   // Validate filename (prevent directory traversal)
   if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
-    return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
+    return errorResponse(validationError('Invalid filename'));
   }
 
   const validation = await validatePath(projectPath, { requireExists: false });
   if (!validation.valid) {
-    return NextResponse.json({ error: validation.error }, { status: validation.status });
+    return pathErrorResponse(validation.error, validation.status);
   }
 
   const filePath = path.join(validation.resolvedPath, filename);
 
   try {
-    const body = await request.json();
-    const parsed = parseBody(DocFileSchema, body);
+    const rawBody = await request.text();
+    const parsed = parseSecureBody(DocFileSchema, rawBody);
     if (!parsed.success) return parsed.response;
     const { frontMatter, content } = parsed.data;
 
@@ -110,6 +112,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json({ success: true, filename });
   } catch (err) {
     log.error({ err }, 'Error writing doc file');
-    return NextResponse.json({ error: 'Failed to write file' }, { status: 500 });
+    return handleRouteError(err);
   }
 }

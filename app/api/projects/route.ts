@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { scanAllProjects } from '@/lib/scanner';
 import { readConfig } from '@/lib/config';
 import { Project, ProjectStatus } from '@/lib/types';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { ProjectStatusSchema } from '@/lib/schemas';
-
-const log = createRouteLogger('projects');
+import { validationError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const log = createRequestLogger('projects', request);
   const { searchParams } = new URL(request.url);
   const statusParam = searchParams.get('status');
   const search = searchParams.get('search')?.toLowerCase();
@@ -19,9 +20,8 @@ export async function GET(request: Request) {
   if (statusParam) {
     const parsed = ProjectStatusSchema.safeParse(statusParam);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${ProjectStatusSchema.options.join(', ')}` },
-        { status: 400 }
+      return errorResponse(
+        validationError(`Invalid status. Must be one of: ${ProjectStatusSchema.options.join(', ')}`)
       );
     }
     status = parsed.data;
@@ -86,9 +86,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     log.error({ err: error }, 'Error scanning projects');
-    return NextResponse.json(
-      { error: 'Failed to scan projects' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

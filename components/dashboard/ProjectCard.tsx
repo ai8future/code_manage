@@ -141,6 +141,9 @@ export function ProjectCard({ project, onOpenInEditor, onOpenInFinder, onCopyPat
         {project.version && (
           <span className="font-mono">v{project.version}</span>
         )}
+        {project.chassisVersion && (
+          <span className="font-mono text-purple-600 dark:text-purple-400">chassis {project.chassisVersion}</span>
+        )}
         {project.hasGit && project.gitBranch && (
           <span className="flex items-center gap-1">
             <GitBranch size={12} />

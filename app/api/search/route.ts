@@ -3,9 +3,9 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { CODE_BASE_PATH } from '@/lib/constants';
 import { SearchResult, API_LIMITS } from '@/lib/activity-types';
-import { createRouteLogger } from '@/lib/logger';
-
-const log = createRouteLogger('search');
+import { createRequestLogger } from '@/lib/logger';
+import { validationError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +20,7 @@ interface RgMatch {
 }
 
 export async function GET(request: Request) {
+  const log = createRequestLogger('search', request);
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
   const limitParam = searchParams.get('limit');
@@ -28,10 +29,7 @@ export async function GET(request: Request) {
     : API_LIMITS.SEARCH_LIMIT_DEFAULT;
 
   if (!query || query.trim().length === 0) {
-    return NextResponse.json(
-      { error: 'Search query is required' },
-      { status: 400 }
-    );
+    return errorResponse(validationError('Search query is required'));
   }
 
   // Limit query length to prevent abuse
@@ -168,9 +166,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     log.error({ err: error }, 'Search error');
-    return NextResponse.json(
-      { error: 'Search failed' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

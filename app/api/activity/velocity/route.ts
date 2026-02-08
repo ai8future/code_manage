@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { scanAllProjects } from '@/lib/scanner';
 import { spawnGit, parseNumstatLine } from '@/lib/git';
 import { VelocityDataPoint, API_LIMITS } from '@/lib/activity-types';
-import { createRouteLogger } from '@/lib/logger';
-
-const log = createRouteLogger('activity/velocity');
+import { createRequestLogger } from '@/lib/logger';
+import { handleRouteError } from '@/lib/api/errors';
+import { workMap } from '@/lib/chassis/work';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const log = createRequestLogger('activity/velocity', request);
   const { searchParams } = new URL(request.url);
   const daysParam = searchParams.get('days');
   const days = daysParam
@@ -28,46 +29,56 @@ export async function GET(request: Request) {
       velocityMap.set(dateStr, { added: 0, removed: 0 });
     }
 
-    // Collect git stats from each project
-    const gitPromises = projects
-      .filter((p) => p.hasGit)
-      .map(async (project) => {
-        try {
-          const stdout = await spawnGit([
-            'log',
-            '--numstat',
-            `--since=${days} days ago`,
-            '--pretty=format:%ad',
-            '--date=short',
-          ], { cwd: project.path });
+    // Collect git stats from each project with bounded concurrency
+    const gitProjects = projects.filter((p) => p.hasGit);
+    const results = await workMap(
+      gitProjects,
+      async (project) => {
+        const stdout = await spawnGit([
+          'log',
+          '--numstat',
+          `--since=${days} days ago`,
+          '--pretty=format:%ad',
+          '--date=short',
+        ], { cwd: project.path });
 
-          let currentDate = '';
-          for (const line of stdout.split('\n')) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
+        const localMap = new Map<string, { added: number; removed: number }>();
+        let currentDate = '';
+        for (const line of stdout.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
 
-            // Date line (YYYY-MM-DD)
-            if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-              currentDate = trimmed;
-              continue;
-            }
-
-            // Numstat line
-            const stats = parseNumstatLine(trimmed);
-            if (stats && currentDate) {
-              const existing = velocityMap.get(currentDate);
-              if (existing) {
-                existing.added += stats.added;
-                existing.removed += stats.removed;
-              }
-            }
+          // Date line (YYYY-MM-DD)
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            currentDate = trimmed;
+            continue;
           }
-        } catch {
-          // Skip projects where git command fails
-        }
-      });
 
-    await Promise.all(gitPromises);
+          // Numstat line
+          const stats = parseNumstatLine(trimmed);
+          if (stats && currentDate) {
+            const existing = localMap.get(currentDate) ?? { added: 0, removed: 0 };
+            existing.added += stats.added;
+            existing.removed += stats.removed;
+            localMap.set(currentDate, existing);
+          }
+        }
+        return localMap;
+      },
+      { workers: 8 },
+    );
+
+    // Merge per-project results sequentially (no concurrent mutation)
+    for (const result of results) {
+      if (!result.value) continue;
+      for (const [date, stats] of result.value) {
+        const existing = velocityMap.get(date);
+        if (existing) {
+          existing.added += stats.added;
+          existing.removed += stats.removed;
+        }
+      }
+    }
 
     // Convert map to sorted array
     const data: VelocityDataPoint[] = Array.from(velocityMap.entries())
@@ -81,9 +92,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ data });
   } catch (error) {
     log.error({ err: error }, 'Error fetching velocity data');
-    return NextResponse.json(
-      { error: 'Failed to fetch velocity data' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }

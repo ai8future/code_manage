@@ -1,23 +1,26 @@
 import { z } from 'zod';
+import { mustLoad } from '@/lib/chassis/config';
 
 const EnvSchema = z.object({
-  CODE_BASE_PATH: z
+  codeBasePath: z
     .string()
     .min(1, 'CODE_BASE_PATH must not be empty')
     .default('/Users/cliff/Desktop/_code'),
-  LOG_LEVEL: z
+  logLevel: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
-  NODE_ENV: z
+  nodeEnv: z
     .enum(['development', 'production', 'test'])
     .default('development'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
 
-// Fail-fast: parse at module load time
-export const env: Env = EnvSchema.parse({
-  CODE_BASE_PATH: process.env.CODE_BASE_PATH ?? undefined,
-  LOG_LEVEL: process.env.LOG_LEVEL ?? undefined,
-  NODE_ENV: process.env.NODE_ENV ?? undefined,
+export const env: Env = mustLoad({
+  schema: EnvSchema,
+  env: {
+    codeBasePath: 'CODE_BASE_PATH',
+    logLevel: 'LOG_LEVEL',
+    nodeEnv: 'NODE_ENV',
+  },
 });

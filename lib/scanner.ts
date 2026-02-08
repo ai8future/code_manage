@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { Project, ProjectStatus, BugInfo, BugReport, RcodegenInfo, RcodegenGrade } from './types';
 import { CODE_BASE_PATH, FOLDER_TO_STATUS } from './constants';
+import { workMap } from './chassis/work';
 
 // Folders to completely ignore
 const IGNORED_FOLDERS = new Set([
@@ -262,6 +263,14 @@ export async function getVersion(projectPath: string): Promise<string | undefine
   return undefined;
 }
 
+export async function getChassisVersion(projectPath: string): Promise<string | undefined> {
+  const content = await readTextFile(path.join(projectPath, 'VERSION.chassis'));
+  if (content) {
+    return content.trim().split('\n')[0];
+  }
+  return undefined;
+}
+
 export async function getScripts(projectPath: string): Promise<Record<string, string> | undefined> {
   const packageJson = await readJsonFile<{ scripts?: Record<string, string> }>(
     path.join(projectPath, 'package.json')
@@ -514,12 +523,13 @@ export async function scanProject(projectPath: string, requireIndicators: boolea
     return null;
   }
 
-  const [techStack, description, gitInfo, version, scripts, dependencies, lastModified, bugs, rcodegen] =
+  const [techStack, description, gitInfo, version, chassisVersion, scripts, dependencies, lastModified, bugs, rcodegen] =
     await Promise.all([
       detectTechStack(projectPath),
       extractDescription(projectPath),
       getGitInfo(projectPath),
       getVersion(projectPath),
+      getChassisVersion(projectPath),
       getScripts(projectPath),
       getDependencies(projectPath),
       getLastModified(projectPath),
@@ -541,6 +551,7 @@ export async function scanProject(projectPath: string, requireIndicators: boolea
     status: determineStatus(projectPath),
     techStack,
     version,
+    chassisVersion,
     lastModified,
     gitBranch: gitInfo.branch,
     gitRemote: gitInfo.remote,
@@ -556,45 +567,49 @@ export async function scanAllProjects(): Promise<Project[]> {
   const projects: Project[] = [];
   const seenSlugs = new Set<string>();
 
-  // Scan a single directory level for projects
+  // Scan a single directory level for projects with bounded concurrency
   async function scanLevel(dirPath: string, requireIndicators: boolean, suite?: string): Promise<void> {
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
+      const dirEntries = entries.filter(entry =>
+        entry.isDirectory() &&
+        !IGNORED_FOLDERS.has(entry.name) &&
+        !entry.name.startsWith('.') &&
+        !entry.name.startsWith('__') &&
+        !isSuiteDirectory(entry.name)
+      );
 
-        const fullPath = path.join(dirPath, entry.name);
+      const results = await workMap(
+        dirEntries,
+        async (entry) => {
+          const fullPath = path.join(dirPath, entry.name);
+          return scanProject(fullPath, requireIndicators, suite);
+        },
+        { workers: 8 },
+      );
 
-        // Skip ignored folders
-        if (IGNORED_FOLDERS.has(entry.name)) continue;
-        if (entry.name.startsWith('.')) continue;
-        if (entry.name.startsWith('.sync-conflict')) continue;
-        if (entry.name.startsWith('__')) continue; // Skip __VAULT etc.
-        if (isSuiteDirectory(entry.name)) continue; // Suites scanned separately
+      // Collect successful results and handle slug collisions sequentially
+      for (const result of results) {
+        const project = result.value;
+        if (!project) continue;
 
-        // Check if it's a project
-        const project = await scanProject(fullPath, requireIndicators, suite);
-        if (project) {
-          // Handle slug collisions by prefixing with suite name
-          if (seenSlugs.has(project.slug)) {
-            // Retroactively prefix the first project if it's also in a suite
-            const existing = projects.find(p => p.slug === project.slug);
-            if (existing?.suite) {
-              const existingPrefix = existing.suite.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-              seenSlugs.delete(existing.slug);
-              existing.slug = `${existingPrefix}--${existing.slug}`;
-              seenSlugs.add(existing.slug);
-            }
-            // Prefix the new project if it's in a suite
-            if (suite) {
-              const suitePrefix = suite.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-              project.slug = `${suitePrefix}--${project.slug}`;
-            }
+        // Handle slug collisions by prefixing with suite name
+        if (seenSlugs.has(project.slug)) {
+          const existing = projects.find(p => p.slug === project.slug);
+          if (existing?.suite) {
+            const existingPrefix = existing.suite.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            seenSlugs.delete(existing.slug);
+            existing.slug = `${existingPrefix}--${existing.slug}`;
+            seenSlugs.add(existing.slug);
           }
-          seenSlugs.add(project.slug);
-          projects.push(project);
+          if (suite) {
+            const suitePrefix = suite.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            project.slug = `${suitePrefix}--${project.slug}`;
+          }
         }
+        seenSlugs.add(project.slug);
+        projects.push(project);
       }
     } catch {
       // Ignore permission errors

@@ -5,16 +5,16 @@ import { ProjectStatus } from '@/lib/types';
 import { setProjectMetadata } from '@/lib/config';
 import { CODE_BASE_PATH, STATUS_FOLDERS } from '@/lib/constants';
 import { isSuiteDirectory } from '@/lib/scanner';
-import { createRouteLogger } from '@/lib/logger';
+import { createRequestLogger } from '@/lib/logger';
 import { MoveProjectSchema } from '@/lib/schemas';
-import { parseBody } from '@/lib/api/validate';
+import { parseSecureBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
-
-const log = createRouteLogger('actions/move');
+import { conflictError } from '@/lib/chassis/errors';
+import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 /**
  * Detect the suite directory a project lives in, if any.
- * e.g. "/Users/cliff/Desktop/_code/builder_suite/code_manage" → "builder_suite"
+ * e.g. "/Users/cliff/Desktop/_code/builder_suite/code_manage" -> "builder_suite"
  */
 function detectSuiteFromPath(projectPath: string): string | null {
   const relativePath = path.relative(CODE_BASE_PATH, projectPath);
@@ -27,15 +27,17 @@ function detectSuiteFromPath(projectPath: string): string | null {
 }
 
 export async function POST(request: Request) {
+  const log = createRequestLogger('actions/move', request);
+
   try {
-    const body = await request.json();
-    const parsed = parseBody(MoveProjectSchema, body);
+    const rawBody = await request.text();
+    const parsed = parseSecureBody(MoveProjectSchema, rawBody);
     if (!parsed.success) return parsed.response;
     const { slug, projectPath, newStatus } = parsed.data;
 
     const pathResult = await validatePath(projectPath);
     if (!pathResult.valid) {
-      return NextResponse.json({ error: pathResult.error }, { status: pathResult.status });
+      return pathErrorResponse(pathResult.error, pathResult.status);
     }
     const resolvedSourcePath = pathResult.resolvedPath;
 
@@ -68,9 +70,8 @@ export async function POST(request: Request) {
       // but handle race condition in the rename error handler
       const targetExists = await fs.access(targetPath).then(() => true).catch(() => false);
       if (targetExists) {
-        return NextResponse.json(
-          { error: 'A project with this name already exists in the target location' },
-          { status: 409 }
+        return errorResponse(
+          conflictError('A project with this name already exists in the target location')
         );
       }
       await fs.rename(resolvedSourcePath, targetPath);
@@ -78,9 +79,8 @@ export async function POST(request: Request) {
       // Handle race condition: target was created between check and rename
       if ((renameError as NodeJS.ErrnoException).code === 'EEXIST' ||
           (renameError as NodeJS.ErrnoException).code === 'ENOTEMPTY') {
-        return NextResponse.json(
-          { error: 'A project with this name already exists in the target location' },
-          { status: 409 }
+        return errorResponse(
+          conflictError('A project with this name already exists in the target location')
         );
       }
       throw renameError;
@@ -95,9 +95,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     log.error({ err: error }, 'Failed to move project');
-    return NextResponse.json(
-      { error: 'Failed to move project' },
-      { status: 500 }
-    );
+    return handleRouteError(error);
   }
 }
