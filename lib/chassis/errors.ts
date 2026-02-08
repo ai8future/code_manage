@@ -1,4 +1,4 @@
-// Adapted from @ai8future/errors — unified error type with dual HTTP and gRPC status codes
+// Adapted from @ai8future/errors v4 — unified error type with dual HTTP and gRPC status codes
 
 /** gRPC status code names matching google.rpc.Code. */
 export type GrpcCode =
@@ -33,6 +33,11 @@ export class ServiceError extends Error {
   withDetail(key: string, value: string): this {
     this.details.set(key, value);
     return this;
+  }
+
+  /** Convert to a plain object suitable for gRPC status. */
+  grpcStatus(): { code: GrpcCode; message: string } {
+    return { code: this.grpcCode, message: this.message };
   }
 
   /** Convert to RFC 9457 Problem Details format. */
@@ -100,6 +105,7 @@ export function forbiddenError(msg: string): ServiceError {
 
 // --- RFC 9457 Problem Details ---
 
+/** Type URI map keyed by gRPC code. */
 const TYPE_URIS: Record<string, string> = {
   INVALID_ARGUMENT: 'https://chassis.ai8future.com/errors/validation',
   NOT_FOUND: 'https://chassis.ai8future.com/errors/not-found',
@@ -130,6 +136,74 @@ export interface ProblemDetail {
   instance?: string;
   extensions?: Record<string, string>;
 }
+
+// --- HTTP Status → Problem Detail mapping ---
+
+/** Maps HTTP status codes to RFC 9457 type URIs. */
+export const HTTP_STATUS_TYPE_MAP: Record<number, string> = {
+  400: TYPE_URIS.INVALID_ARGUMENT!,
+  401: TYPE_URIS.UNAUTHENTICATED!,
+  403: TYPE_URIS.PERMISSION_DENIED!,
+  404: TYPE_URIS.NOT_FOUND!,
+  408: TYPE_URIS.DEADLINE_EXCEEDED!,
+  409: TYPE_URIS.INVALID_ARGUMENT!,
+  413: TYPE_URIS.INVALID_ARGUMENT!,
+  422: TYPE_URIS.INVALID_ARGUMENT!,
+  429: TYPE_URIS.RESOURCE_EXHAUSTED!,
+  500: TYPE_URIS.INTERNAL!,
+  502: TYPE_URIS.UNAVAILABLE!,
+  503: TYPE_URIS.UNAVAILABLE!,
+  504: TYPE_URIS.DEADLINE_EXCEEDED!,
+};
+
+export const HTTP_STATUS_TITLE_MAP: Record<number, string> = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  408: 'Request Timeout',
+  409: 'Conflict',
+  413: 'Payload Too Large',
+  422: 'Validation Error',
+  429: 'Rate Limit Exceeded',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
+  504: 'Gateway Timeout',
+};
+
+/** Resolve RFC 9457 type URI for an HTTP status code. */
+export function typeUriForStatus(status: number): string {
+  return HTTP_STATUS_TYPE_MAP[status] ?? TYPE_URIS.INTERNAL!;
+}
+
+/** Resolve RFC 9457 title for an HTTP status code. */
+export function titleForStatus(status: number): string {
+  return HTTP_STATUS_TITLE_MAP[status] ?? 'Error';
+}
+
+/**
+ * Build a ProblemDetail from an HTTP status code and message.
+ * Useful for error handlers that work with status codes rather than GrpcCode values.
+ */
+export function problemDetailForStatus(
+  status: number,
+  detail: string,
+  instance?: string,
+  extensions?: Record<string, string>,
+): ProblemDetail {
+  const pd: ProblemDetail = {
+    type: typeUriForStatus(status),
+    title: titleForStatus(status),
+    status,
+    detail,
+  };
+  if (instance) pd.instance = instance;
+  if (extensions) pd.extensions = extensions;
+  return pd;
+}
+
+// --- Helpers ---
 
 /**
  * Converts any error to a ServiceError. If it's already one, returns it;

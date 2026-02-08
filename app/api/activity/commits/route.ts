@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const gitProjects = projects.filter((p) => p.hasGit);
     await workMap(
       gitProjects,
-      async (project) => {
+      async (project, { signal: _signal }) => {
         const stdout = await spawnGit([
           'log',
           '--numstat',

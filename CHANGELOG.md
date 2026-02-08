@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-02-08
+
+### Changed
+- Upgrade chassis integration to align with chassis-ts v4.0.3
+- `lib/chassis/errors.ts`: add `grpcStatus()` method, HTTP status→Problem Detail helpers (`typeUriForStatus`, `titleForStatus`, `problemDetailForStatus`), `HTTP_STATUS_TYPE_MAP` and `HTTP_STATUS_TITLE_MAP` constants
+- `lib/chassis/work.ts`: major rewrite — Semaphore-based concurrency, `AbortSignal` context, `workRace`, `workAll`, `workStream`, input validation via `resolveWorkers`
+- `lib/api/errors.ts`: refactored `pathErrorResponse` to use `typeUriForStatus`/`titleForStatus` instead of hardcoded strings
+- Activity route handlers updated for v4 `workMap` signature `(item, { signal })`
+
+### Added
+- `VERSION.chassis` file tracking chassis-ts alignment version (4.0.3)
+
+### Agent
+- Claude:Opus 4.6
+
+## [1.2.0] - 2026-02-07
+
+### Added
+- Chassis-ts pattern integration: errors, config, secval, work modules in `lib/chassis/`
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.1.0] - 2026-02-05
 
 ### Added

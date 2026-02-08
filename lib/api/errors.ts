@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import {
   ServiceError,
   fromError,
+  typeUriForStatus,
+  titleForStatus,
   type ProblemDetail,
 } from '@/lib/chassis/errors';
 
@@ -38,10 +40,8 @@ export function handleRouteError(error: unknown, requestPath?: string): NextResp
  */
 export function pathErrorResponse(error: string, status: number, requestPath?: string): NextResponse {
   const problem: ProblemDetail = {
-    type: status === 403
-      ? 'https://chassis.ai8future.com/errors/unauthorized'
-      : 'https://chassis.ai8future.com/errors/not-found',
-    title: status === 403 ? 'Forbidden' : 'Not Found',
+    type: typeUriForStatus(status),
+    title: titleForStatus(status),
     status,
     detail: error,
   };
