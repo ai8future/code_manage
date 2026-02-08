@@ -1,10 +1,10 @@
 // Adapted from @ai8future/work v4 — structured concurrency patterns
 // Simplified for Next.js: no OTel spans, no version gate
 
-import { availableParallelism } from 'os';
+import { availableParallelism, cpus } from 'os';
 
 function defaultWorkers(): number {
-  return availableParallelism?.() ?? 4;
+  return availableParallelism?.() ?? cpus().length ?? 4;
 }
 
 function resolveWorkers(override?: number): number {
