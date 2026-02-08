@@ -3,7 +3,7 @@ import { execFile } from 'child_process';
 import { CODE_BASE_PATH } from '@/lib/constants';
 import { createRequestLogger } from '@/lib/logger';
 import { TerminalCommandSchema } from '@/lib/schemas';
-import { parseSecureBody } from '@/lib/api/validate';
+import { parseBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
 import { validationError, forbiddenError } from '@/lib/chassis/errors';
 import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
@@ -107,7 +107,13 @@ export async function POST(request: Request) {
 
   try {
     const rawBody = await request.text();
-    const parsed = parseSecureBody(TerminalCommandSchema, rawBody);
+    let body: unknown;
+    try { body = JSON.parse(rawBody); } catch {
+      return errorResponse(validationError('Invalid JSON'));
+    }
+    // parseBody (not parseSecureBody) — "command" is a secval v5 dangerous key,
+    // but this endpoint intentionally accepts commands with its own whitelist guard.
+    const parsed = parseBody(TerminalCommandSchema, body);
     if (!parsed.success) return parsed.response;
     const { command, cwd } = parsed.data;
 

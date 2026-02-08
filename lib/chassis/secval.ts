@@ -1,4 +1,4 @@
-// Adapted from @ai8future/secval — JSON security validation
+// Adapted from @ai8future/secval v5 — JSON security validation
 
 /** Module-local error — NOT a ServiceError. */
 export class SecvalError extends Error {
@@ -24,15 +24,16 @@ const DANGEROUS_KEYS = new Set([
   'exec',
   'spawn',
   'fork',
+  'command',
 ]);
 
 const MAX_NESTING_DEPTH = 20;
 
 /**
  * Parses data as JSON and scans for dangerous keys and excessive nesting.
- * Returns the parsed value on success. Throws SecvalError on violation.
+ * Throws SecvalError on violation. Use JSON.parse() separately for the parsed value.
  */
-export function validateJSON(data: string): unknown {
+export function validateJSON(data: string): void {
   let parsed: unknown;
   try {
     parsed = JSON.parse(data);
@@ -40,7 +41,6 @@ export function validateJSON(data: string): unknown {
     throw new SecvalError(`invalid JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
   walkValue(parsed, 0);
-  return parsed;
 }
 
 function walkValue(value: unknown, depth: number): void {

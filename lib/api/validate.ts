@@ -41,10 +41,11 @@ export function parseSecureBody<T>(
   schema: ZodType<T>,
   rawBody: string,
 ): ParseSuccess<T> | ParseFailure {
-  // Security validation: parse JSON, check for dangerous keys, nesting depth
+  // Security validation: check for dangerous keys, nesting depth
   let data: unknown;
   try {
-    data = validateJSON(rawBody);
+    validateJSON(rawBody);
+    data = JSON.parse(rawBody);
   } catch (err) {
     if (err instanceof SecvalError) {
       return {

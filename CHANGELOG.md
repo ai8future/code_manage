@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-02-08
+
+### Changed
+- Upgrade chassis integration to align with chassis-ts v5.0.0
+- `lib/chassis/errors.ts`: `TYPE_URIS` and `TITLES` now typed as `Record<GrpcCode, string>` for compile-time safety; removed `!` non-null assertions; un-exported `HTTP_STATUS_TYPE_MAP` and `HTTP_STATUS_TITLE_MAP`; added `writeProblem()` function and `ProblemReply` interface
+- `lib/chassis/secval.ts`: added `"command"` to `DANGEROUS_KEYS`; `validateJSON` now returns `void` (callers use `JSON.parse` separately)
+- `lib/chassis/work.ts`: `Semaphore` constructor now validates `limit >= 1`; `workStream` uses index-based iteration for O(1) yields instead of `shift()`
+- `lib/chassis/config.ts`: header updated to v5 (no functional changes)
+- `lib/api/validate.ts`: updated `parseSecureBody` for `validateJSON` void return
+- `app/api/terminal/route.ts`: switched from `parseSecureBody` to `parseBody` (terminal route intentionally accepts `command` field which is now a secval dangerous key)
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.3.0] - 2026-02-08
 
 ### Changed

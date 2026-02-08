@@ -1,4 +1,4 @@
-// Adapted from @ai8future/work v4 — structured concurrency patterns
+// Adapted from @ai8future/work v5 — structured concurrency patterns
 // Simplified for Next.js: no OTel spans, no version gate
 
 import { availableParallelism, cpus } from 'os';
@@ -31,7 +31,11 @@ class Semaphore {
   private queue: (() => void)[] = [];
   private active = 0;
 
-  constructor(private readonly limit: number) {}
+  constructor(private readonly limit: number) {
+    if (limit < 1) {
+      throw new RangeError(`semaphore limit must be >= 1, got ${limit}`);
+    }
+  }
 
   async acquire(): Promise<void> {
     if (this.active < this.limit) {
@@ -163,6 +167,7 @@ export async function* workStream<T, R>(
   const results: Result<R>[] = [];
   const pending: Promise<void>[] = [];
   let index = 0;
+  let yieldIndex = 0;
 
   for await (const item of iter) {
     if (ac.signal.aborted) break;
@@ -186,9 +191,9 @@ export async function* workStream<T, R>(
     })();
     pending.push(p);
 
-    // Yield any completed results
-    while (results.length > 0) {
-      yield results.shift()!;
+    // Yield any completed results (O(1) per yield via index)
+    while (yieldIndex < results.length) {
+      yield results[yieldIndex++]!;
     }
   }
 
@@ -196,7 +201,7 @@ export async function* workStream<T, R>(
   await Promise.all(pending);
 
   // Yield remaining results
-  while (results.length > 0) {
-    yield results.shift()!;
+  while (yieldIndex < results.length) {
+    yield results[yieldIndex++]!;
   }
 }

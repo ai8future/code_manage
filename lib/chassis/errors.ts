@@ -1,4 +1,4 @@
-// Adapted from @ai8future/errors v4 — unified error type with dual HTTP and gRPC status codes
+// Adapted from @ai8future/errors v5 — unified error type with dual HTTP and gRPC status codes
 
 /** gRPC status code names matching google.rpc.Code. */
 export type GrpcCode =
@@ -43,8 +43,8 @@ export class ServiceError extends Error {
   /** Convert to RFC 9457 Problem Details format. */
   problemDetail(requestPath?: string): ProblemDetail {
     const pd: ProblemDetail = {
-      type: TYPE_URIS[this.grpcCode] ?? TYPE_URIS.INTERNAL!,
-      title: TITLES[this.grpcCode] ?? 'Error',
+      type: TYPE_URIS[this.grpcCode],
+      title: TITLES[this.grpcCode],
       status: this.httpCode,
       detail: this.message,
     };
@@ -106,7 +106,7 @@ export function forbiddenError(msg: string): ServiceError {
 // --- RFC 9457 Problem Details ---
 
 /** Type URI map keyed by gRPC code. */
-const TYPE_URIS: Record<string, string> = {
+const TYPE_URIS: Record<GrpcCode, string> = {
   INVALID_ARGUMENT: 'https://chassis.ai8future.com/errors/validation',
   NOT_FOUND: 'https://chassis.ai8future.com/errors/not-found',
   UNAUTHENTICATED: 'https://chassis.ai8future.com/errors/unauthorized',
@@ -117,7 +117,7 @@ const TYPE_URIS: Record<string, string> = {
   INTERNAL: 'https://chassis.ai8future.com/errors/internal',
 };
 
-const TITLES: Record<string, string> = {
+const TITLES: Record<GrpcCode, string> = {
   INVALID_ARGUMENT: 'Validation Error',
   NOT_FOUND: 'Not Found',
   UNAUTHENTICATED: 'Unauthorized',
@@ -140,23 +140,23 @@ export interface ProblemDetail {
 // --- HTTP Status → Problem Detail mapping ---
 
 /** Maps HTTP status codes to RFC 9457 type URIs. */
-export const HTTP_STATUS_TYPE_MAP: Record<number, string> = {
-  400: TYPE_URIS.INVALID_ARGUMENT!,
-  401: TYPE_URIS.UNAUTHENTICATED!,
-  403: TYPE_URIS.PERMISSION_DENIED!,
-  404: TYPE_URIS.NOT_FOUND!,
-  408: TYPE_URIS.DEADLINE_EXCEEDED!,
-  409: TYPE_URIS.INVALID_ARGUMENT!,
-  413: TYPE_URIS.INVALID_ARGUMENT!,
-  422: TYPE_URIS.INVALID_ARGUMENT!,
-  429: TYPE_URIS.RESOURCE_EXHAUSTED!,
-  500: TYPE_URIS.INTERNAL!,
-  502: TYPE_URIS.UNAVAILABLE!,
-  503: TYPE_URIS.UNAVAILABLE!,
-  504: TYPE_URIS.DEADLINE_EXCEEDED!,
+const HTTP_STATUS_TYPE_MAP: Record<number, string> = {
+  400: TYPE_URIS.INVALID_ARGUMENT,
+  401: TYPE_URIS.UNAUTHENTICATED,
+  403: TYPE_URIS.PERMISSION_DENIED,
+  404: TYPE_URIS.NOT_FOUND,
+  408: TYPE_URIS.DEADLINE_EXCEEDED,
+  409: TYPE_URIS.INVALID_ARGUMENT,
+  413: TYPE_URIS.INVALID_ARGUMENT,
+  422: TYPE_URIS.INVALID_ARGUMENT,
+  429: TYPE_URIS.RESOURCE_EXHAUSTED,
+  500: TYPE_URIS.INTERNAL,
+  502: TYPE_URIS.UNAVAILABLE,
+  503: TYPE_URIS.UNAVAILABLE,
+  504: TYPE_URIS.DEADLINE_EXCEEDED,
 };
 
-export const HTTP_STATUS_TITLE_MAP: Record<number, string> = {
+const HTTP_STATUS_TITLE_MAP: Record<number, string> = {
   400: 'Bad Request',
   401: 'Unauthorized',
   403: 'Forbidden',
@@ -174,7 +174,7 @@ export const HTTP_STATUS_TITLE_MAP: Record<number, string> = {
 
 /** Resolve RFC 9457 type URI for an HTTP status code. */
 export function typeUriForStatus(status: number): string {
-  return HTTP_STATUS_TYPE_MAP[status] ?? TYPE_URIS.INTERNAL!;
+  return HTTP_STATUS_TYPE_MAP[status] ?? TYPE_URIS.INTERNAL;
 }
 
 /** Resolve RFC 9457 title for an HTTP status code. */
@@ -213,4 +213,29 @@ export function fromError(err: unknown): ServiceError {
   if (err instanceof ServiceError) return err;
   const msg = err instanceof Error ? err.message : String(err);
   return internalError(msg);
+}
+
+// --- Write helpers (v5) ---
+
+/** Minimal reply interface for writeProblem — works with any framework response object. */
+export interface ProblemReply {
+  code(statusCode: number): ProblemReply;
+  header(name: string, value: string): ProblemReply;
+  send(body: unknown): void;
+}
+
+/**
+ * Serialise a ServiceError as an RFC 9457 Problem Details response.
+ * Framework-agnostic: accepts any reply object matching ProblemReply.
+ * For 5xx errors the detail is suppressed to avoid leaking internals.
+ */
+export function writeProblem(reply: ProblemReply, err: ServiceError, requestPath?: string): void {
+  const problem = err.problemDetail(requestPath);
+  if (err.httpCode >= 500) {
+    problem.detail = 'Internal Server Error';
+  }
+  reply
+    .code(err.httpCode)
+    .header('content-type', 'application/problem+json')
+    .send(problem);
 }
