@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.2] - 2026-02-17
+
+### Changed
+- Modernize Zod usage to v4-native patterns across all schema and validation code
+- `lib/chassis/config.ts`: import `z` as value (not type-only) from `'zod'`; clean up error formatting
+- `lib/api/validate.ts`: replace try/catch + `instanceof ZodError` with `safeParse` (v4 preferred); drop `ZodError` import
+- `lib/schemas.ts`: replace all deprecated `message` string shorthand with v4 `{ error: '...' }` param
+- `lib/api/createOpenActionRoute.ts`: same `message` → `{ error }` migration
+- `lib/env.ts`: same `message` → `{ error }` migration
+
+### Agent
+- Claude:Opus 4.6
+
+## [1.4.1] - 2026-02-17
+
+### Changed
+- Replace boilerplate Next.js README with comprehensive project documentation covering architecture, API reference, security model, configuration, and all key modules
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.0] - 2026-02-08
 
 ### Changed

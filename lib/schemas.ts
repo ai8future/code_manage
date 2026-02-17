@@ -17,14 +17,14 @@ export const UpdateProjectSchema = z.object({
 
 /** POST /api/terminal */
 export const TerminalCommandSchema = z.object({
-  command: z.string().min(1, 'Command is required and must be a non-empty string'),
+  command: z.string().min(1, { error: 'Command is required and must be a non-empty string' }),
   cwd: z.string().optional(),
 });
 
 /** POST /api/actions/move */
 export const MoveProjectSchema = z.object({
-  slug: z.string().min(1, 'slug is required'),
-  projectPath: z.string().min(1, 'projectPath is required'),
+  slug: z.string().min(1, { error: 'slug is required' }),
+  projectPath: z.string().min(1, { error: 'projectPath is required' }),
   newStatus: ProjectStatusSchema,
 });
 
@@ -32,14 +32,14 @@ export const MoveProjectSchema = z.object({
 export const CreateProjectSchema = z.object({
   name: z
     .string()
-    .min(1, 'Project name is required')
+    .min(1, { error: 'Project name is required' })
     .regex(
       /^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$/,
-      'Project name must be lowercase, start with a letter, and contain only letters, numbers, and hyphens',
+      { error: 'Project name must be lowercase, start with a letter, and contain only letters, numbers, and hyphens' },
     ),
   description: z
     .string()
-    .min(1, 'Description is required'),
+    .min(1, { error: 'Description is required' }),
   category: z.enum(['active', 'tools', 'research', 'crawlers'], {
     error: 'Invalid category. Must be one of: active, tools, research, crawlers',
   }),
@@ -47,7 +47,7 @@ export const CreateProjectSchema = z.object({
 
 /** GET /api/search query params */
 export const SearchQuerySchema = z.object({
-  q: z.string().min(1, 'Search query is required'),
+  q: z.string().min(1, { error: 'Search query is required' }),
   limit: z.coerce.number().int().positive().optional(),
 });
 

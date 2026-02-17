@@ -1,5 +1,5 @@
-// Adapted from @ai8future/config v5 — Zod-based config loading with fail-fast validation
-import type { ZodType, z } from 'zod';
+// Adapted from @ai8future/config v5 — Zod v4 config loading with fail-fast validation
+import { z, type ZodType } from 'zod';
 
 /**
  * Maps Zod schema fields to environment variable names.
@@ -29,15 +29,14 @@ export function mustLoad<T extends ZodType>(mapping: EnvMapping<T>): z.infer<T> 
   const result = mapping.schema.safeParse(raw);
 
   if (!result.success) {
-    const details = result.error.issues
-      .map((issue) => {
-        const fieldPath = String(issue.path.map(String).join('.'));
-        const envVar = (mapping.env as Record<string, string>)[fieldPath] ?? fieldPath;
-        return `  ${envVar} (${fieldPath}): ${issue.message}`;
-      })
-      .join('\n');
+    const envLookup = mapping.env as Record<string, string>;
+    const lines = result.error.issues.map((issue) => {
+      const fieldPath = issue.path.map(String).join('.');
+      const envVar = envLookup[fieldPath] ?? fieldPath;
+      return `  ${envVar} (${fieldPath}): ${issue.message}`;
+    });
 
-    console.error(`config: validation failed\n${details}`);
+    console.error(`config: validation failed\n${lines.join('\n')}`);
     process.exit(1);
   }
 

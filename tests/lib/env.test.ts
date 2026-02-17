@@ -5,7 +5,7 @@ import { z } from 'zod';
 const EnvSchema = z.object({
   CODE_BASE_PATH: z
     .string()
-    .min(1, 'CODE_BASE_PATH must not be empty')
+    .min(1, { error: 'CODE_BASE_PATH must not be empty' })
     .default('/Users/cliff/Desktop/_code'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])

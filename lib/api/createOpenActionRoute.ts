@@ -10,7 +10,7 @@ import { handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 const execFileAsync = promisify(execFile);
 
 const openActionSchema = z.object({
-  path: z.string().min(1, 'Path is required'),
+  path: z.string().min(1, { error: 'Path is required' }),
 });
 
 export function createOpenActionRoute(command: string, commandArgs: string[] = []) {

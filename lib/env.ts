@@ -4,7 +4,7 @@ import { mustLoad } from '@/lib/chassis/config';
 const EnvSchema = z.object({
   codeBasePath: z
     .string()
-    .min(1, 'CODE_BASE_PATH must not be empty')
+    .min(1, { error: 'CODE_BASE_PATH must not be empty' })
     .default('/Users/cliff/Desktop/_code'),
   logLevel: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
