@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCachedProjects } from '@/lib/scan-cache';
 import { spawnGit, parseNumstatLine } from '@/lib/git';
 import { VelocityDataPoint, API_LIMITS } from '@/lib/activity-types';
-import { createRequestLogger } from '@/lib/logger';
+import { createTrackedRequestLogger } from '@/lib/logger';
 import { handleRouteError } from '@/lib/api/errors';
 import { workMap } from '@/lib/chassis/work';
 
@@ -11,9 +11,10 @@ export const dynamic = 'force-dynamic';
 // Cache keyed by days parameter
 const velocityCache = new Map<number, { data: VelocityDataPoint[]; ts: number }>();
 const VELOCITY_CACHE_TTL = 60_000; // 60s — velocity data changes slowly
+const VELOCITY_CACHE_MAX_ENTRIES = 10; // FIFO eviction prevents unbounded growth
 
 export async function GET(request: Request) {
-  const log = createRequestLogger('activity/velocity', request);
+  const { log, done } = createTrackedRequestLogger('activity/velocity', request);
   const { searchParams } = new URL(request.url);
   const daysParam = searchParams.get('days');
   const days = daysParam
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
     // Return cached if fresh
     const cached = velocityCache.get(days);
     if (cached && Date.now() - cached.ts < VELOCITY_CACHE_TTL) {
+      done();
       return NextResponse.json({ data: cached.data });
     }
 
@@ -104,11 +106,19 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // Evict oldest entries if cache exceeds max size (FIFO)
+    if (velocityCache.size >= VELOCITY_CACHE_MAX_ENTRIES) {
+      const oldest = velocityCache.keys().next().value;
+      if (oldest !== undefined) velocityCache.delete(oldest);
+    }
+
     // Cache result
     velocityCache.set(days, { data, ts: Date.now() });
 
+    done();
     return NextResponse.json({ data });
   } catch (error) {
+    done();
     log.error({ err: error }, 'Error fetching velocity data');
     return handleRouteError(error);
   }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCachedProjects } from '@/lib/scan-cache';
 import { readConfig } from '@/lib/config';
 import { Project, ProjectStatus } from '@/lib/types';
-import { createRequestLogger } from '@/lib/logger';
+import { createTrackedRequestLogger } from '@/lib/logger';
 import { ProjectStatusSchema } from '@/lib/schemas';
 import { validationError } from '@/lib/chassis/errors';
 import { errorResponse, handleRouteError } from '@/lib/api/errors';
@@ -10,7 +10,7 @@ import { errorResponse, handleRouteError } from '@/lib/api/errors';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const log = createRequestLogger('projects', request);
+  const { log, done } = createTrackedRequestLogger('projects', request);
   const { searchParams } = new URL(request.url);
   const statusParam = searchParams.get('status');
   const search = searchParams.get('search')?.toLowerCase();
@@ -20,6 +20,7 @@ export async function GET(request: Request) {
   if (statusParam) {
     const parsed = ProjectStatusSchema.safeParse(statusParam);
     if (!parsed.success) {
+      done();
       return errorResponse(
         validationError(`Invalid status. Must be one of: ${ProjectStatusSchema.options.join(', ')}`)
       );
@@ -80,11 +81,13 @@ export async function GET(request: Request) {
       return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
     });
 
+    done();
     return NextResponse.json({
       projects: filteredProjects,
       counts,
     });
   } catch (error) {
+    done();
     log.error({ err: error }, 'Error scanning projects');
     return handleRouteError(error);
   }

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.4] - 2026-02-17
+
+### Added
+- `lib/diagnostics.ts`: crash-safe file logger (sync JSON to `.next/crash.log`), health snapshots (RSS, heap, uptime, active handles, inflight requests), inflight request tracking, crash handlers (`uncaughtException`/`unhandledRejection` with full context dump), periodic health monitor (60s interval, warns at RSS > 512MB), graceful shutdown logging
+- `instrumentation.ts`: Next.js server initialization hook — installs crash handlers and health monitor at startup, exports `onRequestError` for request-level error capture
+- `app/api/health/route.ts`: `GET /api/health` endpoint returning live health snapshot and inflight request list with durations
+- `createTrackedRequestLogger()` in `lib/logger.ts` — returns `{ log, done }` that registers/deregisters with crash diagnostics so inflight requests appear in crash dumps
+
+### Fixed
+- `velocityCache` memory leak in `app/api/activity/velocity/route.ts` — added FIFO eviction cap at 10 entries
+
+### Changed
+- `app/api/activity/velocity/route.ts`: adopted `createTrackedRequestLogger` for request lifecycle tracking
+- `app/api/projects/route.ts`: adopted `createTrackedRequestLogger` as reference implementation
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.3] - 2026-02-17
 
 ### Fixed

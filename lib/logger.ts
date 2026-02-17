@@ -1,6 +1,7 @@
 // Adapted from @ai8future/logger — structured JSON logging with sensitive field redaction
 import pino from 'pino';
 import { env } from './env';
+import { trackRequestStart, trackRequestEnd } from './diagnostics';
 
 const logger = pino({
   level: env.logLevel,
@@ -37,4 +38,18 @@ export function createRouteLogger(routeName: string) {
 export function createRequestLogger(routeName: string, request: Request) {
   const requestId = request.headers.get('x-request-id') ?? undefined;
   return logger.child({ route: routeName, requestId });
+}
+
+/** Create a tracked request logger that registers with crash diagnostics.
+ *  Returns { log, done } — call done() when the request completes. */
+export function createTrackedRequestLogger(routeName: string, request: Request) {
+  const requestId = request.headers.get('x-request-id') ?? undefined;
+  const log = logger.child({ route: routeName, requestId });
+  const key = trackRequestStart(routeName, requestId);
+
+  const done = () => {
+    trackRequestEnd(key);
+  };
+
+  return { log, done };
 }
