@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Project, ProjectStatus } from '@/lib/types';
 import { ProjectCard } from './ProjectCard';
 import { SearchBar } from './SearchBar';
 import { SkeletonGrid } from '@/components/layout/SkeletonCard';
 import { FolderX } from 'lucide-react';
 import { useProjectActions } from '@/lib/hooks/useProjectActions';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 interface ProjectGridProps {
   status?: ProjectStatus;
@@ -14,65 +15,27 @@ interface ProjectGridProps {
   showSearch?: boolean;
 }
 
-interface ProjectsResponse {
-  projects: Project[];
-  counts: {
-    active: number;
-    crawlers: number;
-    research: number;
-    icebox: number;
-    archived: number;
-  };
-}
-
 export function ProjectGrid({ status, title, showSearch = true }: ProjectGridProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { projects: allProjects, loading, error, refresh } = useProjects();
   const [search, setSearch] = useState('');
 
-  const fetchProjects = async () => {
-    setLoading(true);
-    setError(null);
+  // Filter from shared dataset
+  const projects = useMemo(() => {
+    let filtered = allProjects;
+    if (status) filtered = filtered.filter((p) => p.status === status);
+    return filtered;
+  }, [allProjects, status]);
 
-    try {
-      const params = new URLSearchParams();
-      if (status) params.set('status', status);
-
-      const response = await fetch(`/api/projects?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch projects');
-
-      const data: ProjectsResponse = await response.json();
-      setProjects(data.projects);
-      setFilteredProjects(data.projects);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProjects();
-  }, [status]);
-
-  useEffect(() => {
-    if (!search.trim()) {
-      setFilteredProjects(projects);
-      return;
-    }
-
+  const filteredProjects = useMemo(() => {
+    if (!search.trim()) return projects;
     const searchLower = search.toLowerCase();
-    setFilteredProjects(
-      projects.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.description?.toLowerCase().includes(searchLower) ||
-          p.techStack.some((t) => t.toLowerCase().includes(searchLower))
-      )
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchLower) ||
+        p.description?.toLowerCase().includes(searchLower) ||
+        p.techStack.some((t) => t.toLowerCase().includes(searchLower))
     );
-  }, [search, projects]);
+  }, [projects, search]);
 
   const { openInEditor, openInFinder, copyPath } = useProjectActions();
 
@@ -89,20 +52,7 @@ export function ProjectGrid({ status, title, showSearch = true }: ProjectGridPro
       });
 
       if (!response.ok) throw new Error('Failed to update project');
-
-      // Optimistically update the local state
-      const updatedProjects = projects.map((p) =>
-        p.slug === project.slug ? { ...p, starred: !p.starred } : p
-      );
-
-      // Re-sort: starred first, then by name
-      updatedProjects.sort((a, b) => {
-        if (a.starred && !b.starred) return -1;
-        if (!a.starred && b.starred) return 1;
-        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-      });
-
-      setProjects(updatedProjects);
+      refresh();
     } catch (err) {
       console.error('Failed to toggle star:', err);
     }

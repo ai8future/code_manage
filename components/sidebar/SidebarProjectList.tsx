@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronRight, LucideIcon, Loader2, Star } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { Project, ProjectStatus } from '@/lib/types';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 interface SidebarProjectListProps {
   href: string;
@@ -28,39 +29,16 @@ export function SidebarProjectList({
 }: SidebarProjectListProps) {
   const pathname = usePathname();
   const { collapsed } = useSidebar();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const { projects: allProjects, loading, refresh } = useProjects();
+
+  // Filter from shared dataset — no separate fetch needed
+  const projects = useMemo(() =>
+    allProjects.filter((p) => p.status === status),
+    [allProjects, status]
+  );
 
   const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
   const isProjectActive = (slug: string) => pathname === `/project/${slug}`;
-
-  useEffect(() => {
-    if (expanded && !loaded) {
-      setLoading(true);
-      fetch(`/api/projects?status=${status}`)
-        .then((res) => res.json())
-        .then((data) => {
-          // API already sorts: starred first, then by name
-          setProjects(data.projects);
-          setLoaded(true);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }
-  }, [expanded, loaded, status]);
-
-  useEffect(() => {
-    if (isActive && loaded) {
-      fetch(`/api/projects?status=${status}`)
-        .then((res) => res.json())
-        .then((data) => {
-          // API already sorts: starred first, then by name
-          setProjects(data.projects);
-        })
-        .catch(() => {});
-    }
-  }, [isActive]);
 
   const handleToggleStar = async (e: React.MouseEvent, project: Project) => {
     e.preventDefault();
@@ -72,16 +50,7 @@ export function SidebarProjectList({
         body: JSON.stringify({ starred: !project.starred }),
       });
       if (response.ok) {
-        // Update and re-sort locally: starred first, then by name
-        const updated = projects.map((p) =>
-          p.slug === project.slug ? { ...p, starred: !p.starred } : p
-        );
-        updated.sort((a, b) => {
-          if (a.starred && !b.starred) return -1;
-          if (!a.starred && b.starred) return 1;
-          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-        });
-        setProjects(updated);
+        refresh();
       }
     } catch {
       // Silently fail

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { scanAllProjects } from '@/lib/scanner';
+import { getCachedProjects } from '@/lib/scan-cache';
 import { spawnGit, parseNumstatLine } from '@/lib/git';
 import { VelocityDataPoint, API_LIMITS } from '@/lib/activity-types';
 import { createRequestLogger } from '@/lib/logger';
@@ -7,6 +7,10 @@ import { handleRouteError } from '@/lib/api/errors';
 import { workMap } from '@/lib/chassis/work';
 
 export const dynamic = 'force-dynamic';
+
+// Cache keyed by days parameter
+const velocityCache = new Map<number, { data: VelocityDataPoint[]; ts: number }>();
+const VELOCITY_CACHE_TTL = 60_000; // 60s — velocity data changes slowly
 
 export async function GET(request: Request) {
   const log = createRequestLogger('activity/velocity', request);
@@ -17,7 +21,13 @@ export async function GET(request: Request) {
     : API_LIMITS.VELOCITY_DAYS_DEFAULT;
 
   try {
-    const projects = await scanAllProjects();
+    // Return cached if fresh
+    const cached = velocityCache.get(days);
+    if (cached && Date.now() - cached.ts < VELOCITY_CACHE_TTL) {
+      return NextResponse.json({ data: cached.data });
+    }
+
+    const projects = await getCachedProjects();
     const velocityMap = new Map<string, { added: number; removed: number }>();
 
     // Initialize all dates in the range
@@ -29,43 +39,48 @@ export async function GET(request: Request) {
       velocityMap.set(dateStr, { added: 0, removed: 0 });
     }
 
-    // Collect git stats from each project with bounded concurrency
+    // Collect git stats from each project with bounded concurrency (3 workers, not 8)
     const gitProjects = projects.filter((p) => p.hasGit);
     const results = await workMap(
       gitProjects,
-      async (project, { signal: _signal }) => {
-        const stdout = await spawnGit([
-          'log',
-          '--numstat',
-          `--since=${days} days ago`,
-          '--pretty=format:%ad',
-          '--date=short',
-        ], { cwd: project.path });
+      async (project) => {
+        try {
+          const stdout = await spawnGit([
+            'log',
+            '--numstat',
+            `--since=${days} days ago`,
+            '--pretty=format:%ad',
+            '--date=short',
+          ], { cwd: project.path, timeoutMs: 15_000 });
 
-        const localMap = new Map<string, { added: number; removed: number }>();
-        let currentDate = '';
-        for (const line of stdout.split('\n')) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
+          const localMap = new Map<string, { added: number; removed: number }>();
+          let currentDate = '';
+          for (const line of stdout.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
 
-          // Date line (YYYY-MM-DD)
-          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-            currentDate = trimmed;
-            continue;
+            // Date line (YYYY-MM-DD)
+            if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+              currentDate = trimmed;
+              continue;
+            }
+
+            // Numstat line
+            const stats = parseNumstatLine(trimmed);
+            if (stats && currentDate) {
+              const existing = localMap.get(currentDate) ?? { added: 0, removed: 0 };
+              existing.added += stats.added;
+              existing.removed += stats.removed;
+              localMap.set(currentDate, existing);
+            }
           }
-
-          // Numstat line
-          const stats = parseNumstatLine(trimmed);
-          if (stats && currentDate) {
-            const existing = localMap.get(currentDate) ?? { added: 0, removed: 0 };
-            existing.added += stats.added;
-            existing.removed += stats.removed;
-            localMap.set(currentDate, existing);
-          }
+          return localMap;
+        } catch {
+          // Skip projects whose git log fails or times out
+          return new Map<string, { added: number; removed: number }>();
         }
-        return localMap;
       },
-      { workers: 8 },
+      { workers: 3 },
     );
 
     // Merge per-project results sequentially (no concurrent mutation)
@@ -88,6 +103,9 @@ export async function GET(request: Request) {
         linesRemoved: stats.removed,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Cache result
+    velocityCache.set(days, { data, ts: Date.now() });
 
     return NextResponse.json({ data });
   } catch (error) {

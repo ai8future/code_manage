@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { scanAllProjects } from '@/lib/scanner';
+import { getCachedProjects, invalidateProjectCache } from '@/lib/scan-cache';
 import { getProjectMetadata, setProjectMetadata } from '@/lib/config';
 import { createRequestLogger } from '@/lib/logger';
 import { UpdateProjectSchema } from '@/lib/schemas';
@@ -17,7 +17,7 @@ export async function GET(
   const { slug } = await params;
 
   try {
-    const projects = await scanAllProjects();
+    const projects = await getCachedProjects();
     const project = projects.find((p) => p.slug === slug);
 
     if (!project) {
@@ -58,6 +58,7 @@ export async function PATCH(
     if (!result.success) return result.response;
 
     await setProjectMetadata(slug, result.data);
+    invalidateProjectCache();
 
     return NextResponse.json({ success: true });
   } catch (error) {

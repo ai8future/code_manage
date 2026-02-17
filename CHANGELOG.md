@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.3] - 2026-02-17
+
+### Fixed
+- Dev server crashing due to concurrent resource exhaustion on dashboard load
+- Multiple components each triggering independent full filesystem scans (5+ simultaneous scans)
+- Unbounded git child process spawning (up to 40+ concurrent git processes)
+- O(n^2) string concatenation in git output buffering causing memory spikes
+- No timeout on git operations allowing processes to hang indefinitely
+- Search route accumulating up to 20MB of unbounded string output
+- Activity routes re-scanning all projects on every request
+
+### Added
+- `lib/scan-cache.ts`: server-side scan cache with 10s TTL and request coalescing — concurrent requests share a single scan
+- `lib/hooks/useProjects.ts`: client-side shared hook with module-level cache — all components share one `/api/projects` fetch
+- Per-process 30s timeout on all git operations (`spawnGit`)
+- 30s cache on commits route, 60s cache on velocity route
+- Array-based `Buffer` accumulation in git.ts and search route (replaces string concatenation)
+
+### Changed
+- Scanner worker concurrency reduced from 8 to 3 (prevents process exhaustion)
+- Activity route workers reduced from 8 to 3 with 15s per-project timeout
+- Git max output reduced from 10MB to 5MB; search max output from 20MB to 5MB
+- `SidebarWrapper`, `CodeHealthSection`, `ProjectTable`, `ProjectGrid`, `SidebarProjectList`, `SettingsPanel` all now use shared `useProjects` hook instead of independent fetches
+- `/api/projects`, `/api/projects/[slug]` now use `getCachedProjects()` instead of raw `scanAllProjects()`
+- Activity routes (`commits`, `velocity`) now use cached project list and gracefully skip failed/timed-out git operations
+- stderr accumulation capped at 4KB in git.ts and search route to prevent memory growth
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.2] - 2026-02-17
 
 ### Changed

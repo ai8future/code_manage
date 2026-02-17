@@ -1,31 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Award, AlertTriangle, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
-import { Project } from '@/lib/types';
 import { getGradeColor, getGradeBgColor } from '@/lib/utils/grades';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 export function CodeHealthSection() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const response = await fetch('/api/projects');
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data.projects || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch projects:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchProjects();
-  }, []);
+  const { projects, loading } = useProjects();
 
   if (loading) {
     return (

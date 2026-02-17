@@ -3,51 +3,84 @@ import { spawn } from 'child_process';
 export interface SpawnGitOptions {
   cwd: string;
   maxOutputSize?: number;
+  /** Kill the process after this many ms. Default: 30 000 (30s). */
+  timeoutMs?: number;
 }
 
-const DEFAULT_MAX_OUTPUT = 10 * 1024 * 1024; // 10MB
+const DEFAULT_MAX_OUTPUT = 5 * 1024 * 1024; // 5MB (down from 10MB)
+const DEFAULT_TIMEOUT_MS = 30_000; // 30 seconds
 
 /**
  * Execute a git command using spawn (no shell).
  * Returns stdout as a string.
+ * Includes per-process timeout and output size limits.
  */
 export function spawnGit(
   args: string[],
   options: SpawnGitOptions
 ): Promise<string> {
-  const { cwd, maxOutputSize = DEFAULT_MAX_OUTPUT } = options;
+  const {
+    cwd,
+    maxOutputSize = DEFAULT_MAX_OUTPUT,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = options;
 
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (fn: () => void) => {
+      if (!settled) {
+        settled = true;
+        fn();
+      }
+    };
+
     const git = spawn('git', args, {
       cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    let output = '';
+    // Array-based buffering to avoid O(n^2) string concatenation
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
     let stderr = '';
 
-    git.stdout.on('data', (data) => {
-      output += data.toString();
-      if (output.length > maxOutputSize) {
+    const timer = setTimeout(() => {
+      git.kill('SIGKILL');
+      settle(() => reject(new Error(`git timed out after ${timeoutMs}ms`)));
+    }, timeoutMs);
+
+    git.stdout.on('data', (chunk: Buffer) => {
+      totalBytes += chunk.length;
+      if (totalBytes > maxOutputSize) {
         git.kill();
-        reject(new Error('Git output exceeded maximum size'));
+        settle(() => reject(new Error('Git output exceeded maximum size')));
+        return;
       }
+      chunks.push(chunk);
     });
 
-    git.stderr.on('data', (data) => {
-      stderr += data.toString();
+    git.stderr.on('data', (data: Buffer) => {
+      // Cap stderr accumulation to prevent memory issues
+      if (stderr.length < 4096) {
+        stderr += data.toString();
+      }
     });
 
     git.on('close', (code) => {
-      if (code === 0) {
-        resolve(output);
-      } else {
-        reject(new Error(`git exited with code ${code}: ${stderr}`));
-      }
+      clearTimeout(timer);
+      const output = Buffer.concat(chunks).toString();
+      settle(() => {
+        if (code === 0) {
+          resolve(output);
+        } else {
+          reject(new Error(`git exited with code ${code}: ${stderr.slice(0, 500)}`));
+        }
+      });
     });
 
     git.on('error', (err) => {
-      reject(err);
+      clearTimeout(timer);
+      settle(() => reject(err));
     });
   });
 }

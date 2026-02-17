@@ -64,38 +64,60 @@ export async function GET(request: Request) {
     ];
 
     const stdout = await new Promise<string>((resolve, reject) => {
+      let settled = false;
+      const settle = (fn: () => void) => {
+        if (!settled) { settled = true; fn(); }
+      };
+
       const rg = spawn('rg', args, {
         cwd: CODE_BASE_PATH,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
-      let output = '';
+      // Array-based buffering instead of string concatenation
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
       let errorOutput = '';
+      const MAX_OUTPUT = 5 * 1024 * 1024; // 5MB (down from 20MB)
 
-      rg.stdout.on('data', (data) => {
-        output += data.toString();
-        // Limit buffer size
-        if (output.length > 20 * 1024 * 1024) {
+      // 30-second timeout
+      const timer = setTimeout(() => {
+        rg.kill('SIGKILL');
+        settle(() => reject(new Error('Search timed out')));
+      }, 30_000);
+
+      rg.stdout.on('data', (chunk: Buffer) => {
+        totalBytes += chunk.length;
+        if (totalBytes > MAX_OUTPUT) {
           rg.kill();
-          reject(new Error('Output too large'));
+          settle(() => reject(new Error('Output too large')));
+          return;
         }
+        chunks.push(chunk);
       });
 
-      rg.stderr.on('data', (data) => {
-        errorOutput += data.toString();
+      rg.stderr.on('data', (data: Buffer) => {
+        if (errorOutput.length < 4096) {
+          errorOutput += data.toString();
+        }
       });
 
       rg.on('close', (code) => {
-        // ripgrep returns 1 for no matches, 0 for matches, 2 for errors
-        if (code === 0 || code === 1) {
-          resolve(output);
-        } else {
-          reject(new Error(`rg exited with code ${code}: ${errorOutput}`));
-        }
+        clearTimeout(timer);
+        const output = Buffer.concat(chunks).toString();
+        settle(() => {
+          // ripgrep returns 1 for no matches, 0 for matches, 2 for errors
+          if (code === 0 || code === 1) {
+            resolve(output);
+          } else {
+            reject(new Error(`rg exited with code ${code}: ${errorOutput.slice(0, 500)}`));
+          }
+        });
       });
 
       rg.on('error', (err) => {
-        reject(err);
+        clearTimeout(timer);
+        settle(() => reject(err));
       });
     });
 

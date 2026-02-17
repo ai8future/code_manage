@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, RefreshCw } from 'lucide-react';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 interface Settings {
   sidebarCollapsed: boolean;
@@ -17,24 +18,13 @@ export function SettingsPanel() {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [projectCount, setProjectCount] = useState(0);
+  const { counts, refresh } = useProjects();
+  const projectCount = counts.active + counts.crawlers + counts.research + counts.tools + counts.icebox + counts.archived;
 
   useEffect(() => {
     // Load sidebar collapsed state from localStorage
     const sidebarCollapsed = localStorage.getItem('code-manage-sidebar-collapsed') === 'true';
     setSettings((prev) => ({ ...prev, sidebarCollapsed }));
-
-    // Load project count
-    fetch('/api/projects')
-      .then((res) => res.json())
-      .then((data) => {
-        setProjectCount(
-          (data.counts?.active || 0) +
-          (data.counts?.icebox || 0) +
-          (data.counts?.archived || 0)
-        );
-      })
-      .catch(() => {});
   }, []);
 
   const handleSave = async () => {
@@ -51,19 +41,8 @@ export function SettingsPanel() {
     }
   };
 
-  const handleRescan = async () => {
-    // Trigger a rescan by refreshing the projects endpoint
-    try {
-      const response = await fetch('/api/projects');
-      const data = await response.json();
-      setProjectCount(
-        (data.counts?.active || 0) +
-        (data.counts?.icebox || 0) +
-        (data.counts?.archived || 0)
-      );
-    } catch (error) {
-      console.error('Failed to rescan:', error);
-    }
+  const handleRescan = () => {
+    refresh();
   };
 
   return (

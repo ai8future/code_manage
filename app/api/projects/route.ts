@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { scanAllProjects } from '@/lib/scanner';
+import { getCachedProjects } from '@/lib/scan-cache';
 import { readConfig } from '@/lib/config';
 import { Project, ProjectStatus } from '@/lib/types';
 import { createRequestLogger } from '@/lib/logger';
@@ -28,8 +28,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Single scan - reuse for both filtering and counts
-    const allProjects = await scanAllProjects();
+    // Uses cached + coalesced scan to avoid redundant concurrent scans
+    const allProjects = await getCachedProjects();
     const config = await readConfig();
 
     // Apply custom metadata from config to all projects

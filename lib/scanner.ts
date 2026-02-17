@@ -586,7 +586,7 @@ export async function scanAllProjects(): Promise<Project[]> {
           const fullPath = path.join(dirPath, entry.name);
           return scanProject(fullPath, requireIndicators, suite);
         },
-        { workers: 8 },
+        { workers: 3 },
       );
 
       // Collect successful results and handle slug collisions sequentially

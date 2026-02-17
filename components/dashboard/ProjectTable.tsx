@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   useReactTable,
@@ -27,19 +27,9 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { useProjectActions } from '@/lib/hooks/useProjectActions';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { getGradeColor, getGradeBgColor } from '@/lib/utils/grades';
 import { formatRelativeDate } from '@/lib/utils/dates';
-
-interface ProjectsResponse {
-  projects: Project[];
-  counts: {
-    active: number;
-    crawlers: number;
-    research: number;
-    icebox: number;
-    archived: number;
-  };
-}
 
 interface ProjectTableProps {
   title?: string;
@@ -50,13 +40,19 @@ interface ProjectTableProps {
 const columnHelper = createColumnHelper<Project>();
 
 export function ProjectTable({ title = 'All Projects', status, excludeStatuses }: ProjectTableProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { projects: allProjects, loading, error, refresh } = useProjects();
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'starred', desc: true },
   ]);
   const [globalFilter, setGlobalFilter] = useState('');
+
+  // Filter from the shared dataset instead of making a separate fetch
+  const projects = useMemo(() => {
+    let filtered = allProjects;
+    if (status) filtered = filtered.filter((p) => p.status === status);
+    if (excludeStatuses) filtered = filtered.filter((p) => !excludeStatuses.includes(p.status));
+    return filtered;
+  }, [allProjects, status, excludeStatuses]);
 
   const { openInEditor, openInFinder, copyPath } = useProjectActions();
 
@@ -68,11 +64,7 @@ export function ProjectTable({ title = 'All Projects', status, excludeStatuses }
         body: JSON.stringify({ starred: !project.starred }),
       });
       if (!response.ok) throw new Error('Failed to update project');
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.slug === project.slug ? { ...p, starred: !p.starred } : p
-        )
-      );
+      refresh();
     } catch (err) {
       console.error('Failed to toggle star:', err);
     }
@@ -277,29 +269,6 @@ export function ProjectTable({ title = 'All Projects', status, excludeStatuses }
     ],
     []
   );
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = new URLSearchParams();
-        if (status) params.set('status', status);
-        const response = await fetch(`/api/projects?${params}`);
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        const data: ProjectsResponse = await response.json();
-        const filtered = excludeStatuses
-          ? data.projects.filter((p) => !excludeStatuses.includes(p.status))
-          : data.projects;
-        setProjects(filtered);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
-  }, [status, excludeStatuses]);
 
   const table = useReactTable({
     data: projects,
