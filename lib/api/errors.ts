@@ -6,7 +6,12 @@ import {
   typeUriForStatus,
   titleForStatus,
   type ProblemDetail,
-} from '@/lib/chassis/errors';
+} from '@ai8future/errors';
+
+/** Conflict (409). Uses INVALID_ARGUMENT gRPC code since there is no ALREADY_EXISTS in our subset. */
+export function conflictError(msg: string): ServiceError {
+  return new ServiceError(msg, 'INVALID_ARGUMENT', 409);
+}
 
 /**
  * Convert a ServiceError to a NextResponse with RFC 9457 Problem Details.

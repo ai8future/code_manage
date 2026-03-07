@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { mustLoad } from '@/lib/chassis/config';
+import { requireMajor } from '@ai8future/chassis';
+import { mustLoad } from '@ai8future/config';
+
+requireMajor(8);
 
 const EnvSchema = z.object({
   codeBasePath: z

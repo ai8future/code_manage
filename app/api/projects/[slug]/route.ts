@@ -4,7 +4,7 @@ import { getProjectMetadata, setProjectMetadata } from '@/lib/config';
 import { createRequestLogger } from '@/lib/logger';
 import { UpdateProjectSchema } from '@/lib/schemas';
 import { parseSecureBody } from '@/lib/api/validate';
-import { notFoundError } from '@/lib/chassis/errors';
+import { notFoundError } from '@ai8future/errors';
 import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';

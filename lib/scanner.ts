@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { Project, ProjectStatus, BugInfo, BugReport, RcodegenInfo, RcodegenGrade } from './types';
 import { CODE_BASE_PATH, FOLDER_TO_STATUS } from './constants';
-import { workMap } from './chassis/work';
+import { workMap } from '@ai8future/work';
 
 // Folders to completely ignore
 const IGNORED_FOLDERS = new Set([

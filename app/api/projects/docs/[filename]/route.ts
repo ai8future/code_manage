@@ -6,7 +6,7 @@ import { createRequestLogger } from '@/lib/logger';
 import { DocFileSchema } from '@/lib/schemas';
 import { parseSecureBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
-import { validationError } from '@/lib/chassis/errors';
+import { validationError } from '@ai8future/errors';
 import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';

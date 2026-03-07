@@ -4,7 +4,7 @@ import { spawnGit, parseNumstatLine } from '@/lib/git';
 import { VelocityDataPoint, API_LIMITS } from '@/lib/activity-types';
 import { createTrackedRequestLogger } from '@/lib/logger';
 import { handleRouteError } from '@/lib/api/errors';
-import { workMap } from '@/lib/chassis/work';
+import { workMap } from '@ai8future/work';
 
 export const dynamic = 'force-dynamic';
 

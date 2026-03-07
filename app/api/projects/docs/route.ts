@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { CODE_BASE_PATH } from '@/lib/constants';
-import { validationError, forbiddenError } from '@/lib/chassis/errors';
+import { validationError, forbiddenError } from '@ai8future/errors';
 import { errorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';

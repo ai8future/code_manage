@@ -4,7 +4,7 @@ import { readConfig } from '@/lib/config';
 import { Project, ProjectStatus } from '@/lib/types';
 import { createTrackedRequestLogger } from '@/lib/logger';
 import { ProjectStatusSchema } from '@/lib/schemas';
-import { validationError } from '@/lib/chassis/errors';
+import { validationError } from '@ai8future/errors';
 import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';

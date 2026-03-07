@@ -5,7 +5,7 @@ import { createRequestLogger } from '@/lib/logger';
 import { TerminalCommandSchema } from '@/lib/schemas';
 import { parseBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
-import { validationError, forbiddenError } from '@/lib/chassis/errors';
+import { validationError, forbiddenError } from '@ai8future/errors';
 import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';

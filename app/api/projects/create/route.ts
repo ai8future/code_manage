@@ -7,8 +7,8 @@ import { API_LIMITS } from '@/lib/activity-types';
 import { createRequestLogger } from '@/lib/logger';
 import { CreateProjectSchema } from '@/lib/schemas';
 import { parseSecureBody } from '@/lib/api/validate';
-import { validationError, conflictError, internalError } from '@/lib/chassis/errors';
-import { errorResponse, handleRouteError } from '@/lib/api/errors';
+import { validationError, internalError } from '@ai8future/errors';
+import { errorResponse, handleRouteError, conflictError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';
 

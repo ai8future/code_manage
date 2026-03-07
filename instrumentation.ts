@@ -4,9 +4,13 @@
 export async function register() {
   // Only install in Node.js runtime (not edge)
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
+    // Version gate — must be called before any other chassis module
+    const { requireMajor } = await import('@ai8future/chassis');
+    requireMajor(8);
+
     const { crashLogger, installCrashHandlers, startHealthMonitor, logStartup } =
       await import('@/lib/diagnostics');
-    const registry = await import('@/lib/chassis/registry');
+    const registry = await import('@ai8future/registry');
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
 

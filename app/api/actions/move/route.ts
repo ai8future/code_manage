@@ -9,8 +9,7 @@ import { createRequestLogger } from '@/lib/logger';
 import { MoveProjectSchema } from '@/lib/schemas';
 import { parseSecureBody } from '@/lib/api/validate';
 import { validatePath } from '@/lib/api/pathSecurity';
-import { conflictError } from '@/lib/chassis/errors';
-import { errorResponse, handleRouteError, pathErrorResponse } from '@/lib/api/errors';
+import { errorResponse, handleRouteError, pathErrorResponse, conflictError } from '@/lib/api/errors';
 
 /**
  * Detect the suite directory a project lives in, if any.

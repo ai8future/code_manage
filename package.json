@@ -4,13 +4,20 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 7491",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ai8future/chassis": "file:../../chassis_suite/chassis-ts/packages/chassis",
+    "@ai8future/config": "file:../../chassis_suite/chassis-ts/packages/config",
+    "@ai8future/errors": "file:../../chassis_suite/chassis-ts/packages/errors",
+    "@ai8future/logger": "file:../../chassis_suite/chassis-ts/packages/logger",
+    "@ai8future/registry": "file:../../chassis_suite/chassis-ts/packages/registry",
+    "@ai8future/secval": "file:../../chassis_suite/chassis-ts/packages/secval",
+    "@ai8future/work": "file:../../chassis_suite/chassis-ts/packages/work",
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
     "@tailwindcss/typography": "^0.5.19",
@@ -36,6 +43,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@ai8future/testkit": "file:../../chassis_suite/chassis-ts/packages/testkit",
     "@types/node": "^20",
     "@types/proper-lockfile": "^4.1.4",
     "@types/react": "^18",

@@ -4,7 +4,7 @@ import path from 'path';
 import { CODE_BASE_PATH } from '@/lib/constants';
 import { SearchResult, API_LIMITS } from '@/lib/activity-types';
 import { createRequestLogger } from '@/lib/logger';
-import { validationError } from '@/lib/chassis/errors';
+import { validationError } from '@ai8future/errors';
 import { errorResponse, handleRouteError } from '@/lib/api/errors';
 
 export const dynamic = 'force-dynamic';

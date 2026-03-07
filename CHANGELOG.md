@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.10] - 2026-03-07
+
+### Changed
+- Upgrade chassis integration from v6.0.8 vendored adapters to v8.0.0 `@ai8future/*` packages
+- Replace all `@/lib/chassis/*` imports with direct `@ai8future/*` package imports (errors, secval, config, work, registry)
+- Add `requireMajor(8)` version gate in `instrumentation.ts` and `lib/env.ts`
+- Configure webpack `import` condition for ESM-only chassis packages in `next.config.mjs`
+- Build uses `--webpack` flag (Turbopack doesn't support symlinked ESM externals)
+- Add vitest setup file with chassis version gate for test compatibility
+
+### Removed
+- Delete vendored `lib/chassis/` directory (config.ts, errors.ts, secval.ts, work.ts, registry.ts) — replaced by `@ai8future/*` packages
+
+### Added
+- `conflictError()` factory in `lib/api/errors.ts` (not present in upstream `@ai8future/errors`)
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.9] - 2026-03-07
 
 ### Added

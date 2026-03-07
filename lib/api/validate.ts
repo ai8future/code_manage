@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { type ZodType } from 'zod';
-import { validateJSON, SecvalError } from '@/lib/chassis/secval';
-import { validationError } from '@/lib/chassis/errors';
+import { validateJSON, SecvalError } from '@ai8future/secval';
+import { validationError } from '@ai8future/errors';
 import { errorResponse } from '@/lib/api/errors';
 
 type ParseSuccess<T> = { success: true; data: T };
