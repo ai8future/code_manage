@@ -1,4 +1,4 @@
-// Adapted from @ai8future/secval v5 — JSON security validation
+// Adapted from @ai8future/secval v6 — JSON security validation
 
 /** Module-local error — NOT a ServiceError. */
 export class SecvalError extends Error {

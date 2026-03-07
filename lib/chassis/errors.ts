@@ -1,4 +1,4 @@
-// Adapted from @ai8future/errors v5 — unified error type with dual HTTP and gRPC status codes
+// Adapted from @ai8future/errors v6 — unified error type with dual HTTP and gRPC status codes
 
 /** gRPC status code names matching google.rpc.Code. */
 export type GrpcCode =
@@ -215,7 +215,7 @@ export function fromError(err: unknown): ServiceError {
   return internalError(msg);
 }
 
-// --- Write helpers (v5) ---
+// --- Write helpers (v6) ---
 
 /** Minimal reply interface for writeProblem — works with any framework response object. */
 export interface ProblemReply {
@@ -225,17 +225,25 @@ export interface ProblemReply {
 }
 
 /**
- * Serialise a ServiceError as an RFC 9457 Problem Details response.
- * Framework-agnostic: accepts any reply object matching ProblemReply.
+ * Write an RFC 9457 Problem Details response from raw status/detail values.
+ * Sets Content-Type: application/problem+json, status code, and Problem Details body.
  * For 5xx errors the detail is suppressed to avoid leaking internals.
  */
-export function writeProblem(reply: ProblemReply, err: ServiceError, requestPath?: string): void {
-  const problem = err.problemDetail(requestPath);
-  if (err.httpCode >= 500) {
-    problem.detail = 'Internal Server Error';
-  }
+export function writeProblem(
+  reply: ProblemReply,
+  status: number,
+  detail: string,
+  instance?: string,
+  extensions?: Record<string, string>,
+): void {
+  const problem = problemDetailForStatus(
+    status,
+    status >= 500 ? 'Internal Server Error' : detail,
+    instance,
+    extensions,
+  );
   reply
-    .code(err.httpCode)
+    .code(status)
     .header('content-type', 'application/problem+json')
     .send(problem);
 }

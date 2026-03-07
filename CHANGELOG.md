@@ -1,6 +1,19 @@
 # Changelog
 
+## [1.4.6] - 2026-03-07
+- Sync uncommitted changes
+
 All notable changes to this project will be documented in this file.
+
+## [1.4.5] - 2026-03-07
+
+### Changed
+- Upgraded all chassis modules from v5 to v6 (`errors`, `secval`, `work`, `config`)
+- `writeProblem` in `lib/chassis/errors.ts` now takes `(reply, status, detail, instance?, extensions?)` matching v6 API (raw status/detail instead of ServiceError)
+- `lib/ports.ts` rewritten to use djb2 hashing per v6 spec (was MD5); added `port(serviceName, offset)` API and `PORT_HTTP`, `PORT_GRPC`, `PORT_METRICS` offset constants
+
+### Agent
+- Claude:Opus 4.6
 
 ## [1.4.4] - 2026-02-17
 

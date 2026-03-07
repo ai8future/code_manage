@@ -1,4 +1,4 @@
-// Adapted from @ai8future/work v5 — structured concurrency patterns
+// Adapted from @ai8future/work v6 — structured concurrency patterns
 // Simplified for Next.js: no OTel spans, no version gate
 
 import { availableParallelism, cpus } from 'os';
