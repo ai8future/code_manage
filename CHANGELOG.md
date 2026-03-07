@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.9] - 2026-03-07
+
+### Added
+- `lib/chassis/registry.ts`: vendored chassis registry module — file-based service registration at `/tmp/chassis/code_manage/`, with PID.json, JSONL event log, heartbeat (30s), command polling (3s), and built-in stop/restart commands
+- Registry integration in `instrumentation.ts`: initializes on server startup, declares HTTP port, writes startup event, cleans up on shutdown
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.8] - 2026-03-07
 
 ### Changed

@@ -6,10 +6,39 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
     const { crashLogger, installCrashHandlers, startHealthMonitor, logStartup } =
       await import('@/lib/diagnostics');
+    const registry = await import('@/lib/chassis/registry');
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
 
     logStartup();
     installCrashHandlers(crashLogger);
     startHealthMonitor(crashLogger);
+
+    // Initialize chassis registry — writes PID.json to /tmp/chassis/<service>/
+    let chassisVersion = 'unknown';
+    try {
+      chassisVersion = readFileSync(join(process.cwd(), 'VERSION.chassis'), 'utf-8').trim();
+    } catch { /* use default */ }
+
+    const ac = new AbortController();
+    registry.port(0, 7491, 'Next.js dev server');
+    registry.init(ac, chassisVersion);
+
+    // Start heartbeat and command polling in background
+    registry.startHeartbeat(ac.signal);
+    registry.startCommandPoll(ac.signal);
+
+    // Clean shutdown: abort registry loops and write shutdown event
+    const shutdownRegistry = () => {
+      ac.abort();
+      registry.shutdown(`process exit (PID ${process.pid})`);
+    };
+    process.on('SIGTERM', shutdownRegistry);
+    process.on('SIGINT', shutdownRegistry);
+    process.on('exit', () => {
+      // Last-chance sync cleanup if signal handlers didn't run (e.g., SIGKILL)
+      registry.shutdown(`process exit (PID ${process.pid})`);
+    });
   }
 }
 
