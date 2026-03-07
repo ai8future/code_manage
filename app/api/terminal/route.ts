@@ -111,8 +111,8 @@ export async function POST(request: Request) {
     try { body = JSON.parse(rawBody); } catch {
       return errorResponse(validationError('Invalid JSON'));
     }
-    // parseBody (not parseSecureBody) — "command" is a secval v5 dangerous key,
-    // but this endpoint intentionally accepts commands with its own whitelist guard.
+    // parseBody (not parseSecureBody) — this endpoint intentionally accepts
+    // shell commands with its own whitelist guard.
     const parsed = parseBody(TerminalCommandSchema, body);
     if (!parsed.success) return parsed.response;
     const { command, cwd } = parsed.data;

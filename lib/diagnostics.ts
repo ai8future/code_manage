@@ -128,11 +128,15 @@ export function installCrashHandlers(log: pino.Logger): void {
   });
 
   process.on('exit', (code) => {
-    // Sync-only: last chance to log before death
-    log.fatal(
-      { code, pid: process.pid, uptimeSeconds: Math.round(process.uptime()) },
-      `Process exit (code ${code})`,
-    );
+    // Sync-only: last chance to log before death.
+    // Use info for clean exits (code 0), fatal for crashes.
+    const msg = `Process exit (code ${code})`;
+    const ctx = { code, pid: process.pid, uptimeSeconds: Math.round(process.uptime()) };
+    if (code === 0) {
+      log.info(ctx, msg);
+    } else {
+      log.fatal(ctx, msg);
+    }
   });
 }
 
