@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.13] - 2026-03-07
+
+### Fixed
+- Restore pino-pretty output in development mode after chassis logger migration
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.12] - 2026-03-07
 
 ### Added

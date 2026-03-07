@@ -1,9 +1,16 @@
 // Structured JSON logging via @ai8future/logger
 import { createLogger as createChassisLogger } from '@ai8future/logger';
+import PinoPretty from 'pino-pretty';
 import { env } from './env';
 import { trackRequestStart, trackRequestEnd } from './diagnostics';
 
-const logger = createChassisLogger(env.logLevel);
+const logger = env.nodeEnv === 'development'
+  ? createChassisLogger(env.logLevel, PinoPretty({
+      colorize: true,
+      translateTime: 'SYS:HH:MM:ss.l',
+      ignore: 'pid,hostname',
+    }))
+  : createChassisLogger(env.logLevel);
 
 export default logger;
 
