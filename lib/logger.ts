@@ -1,31 +1,9 @@
-// Structured JSON logging with sensitive field redaction
-import pino from 'pino';
+// Structured JSON logging via @ai8future/logger
+import { createLogger as createChassisLogger } from '@ai8future/logger';
 import { env } from './env';
 import { trackRequestStart, trackRequestEnd } from './diagnostics';
 
-const logger = pino({
-  level: env.logLevel,
-  timestamp: pino.stdTimeFunctions.isoTime,
-  redact: {
-    paths: [
-      'password', 'token', 'secret', 'authorization', 'cookie',
-      '*.password', '*.token', '*.secret', '*.key',
-    ],
-    censor: '[Redacted]',
-  },
-  ...(env.nodeEnv === 'development'
-    ? {
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'SYS:HH:MM:ss.l',
-            ignore: 'pid,hostname',
-          },
-        },
-      }
-    : {}),
-});
+const logger = createChassisLogger(env.logLevel);
 
 export default logger;
 

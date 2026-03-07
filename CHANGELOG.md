@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.12] - 2026-03-07
+
+### Added
+- `@ai8future/logger`: replace local Pino setup with chassis logger (broader redaction, OTel trace ID injection)
+- `@ai8future/flagz`: feature flags via `fromEnv("FLAG_")` source in `lib/flags.ts`
+- `@ai8future/call`: resilient HTTP client for xyops integration
+- `lib/xyops.ts`: XyopsClient with monitoring bridge, job management, and alert APIs
+- Xyops config env vars: `XYOPS_BASE_URL`, `XYOPS_API_KEY`, `XYOPS_SERVICE_NAME`, `XYOPS_MONITOR_ENABLED`, `XYOPS_MONITOR_INTERVAL`
+- Xyops monitoring bridge wired into `instrumentation.ts` (activates when base URL and API key are set)
+
+### Removed
+- `tests/helpers.ts`: dead code (no test files imported it)
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.11] - 2026-03-07
 
 ### Changed

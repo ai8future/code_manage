@@ -32,6 +32,15 @@ export async function register() {
     registry.startHeartbeat(ac.signal);
     registry.startCommandPoll(ac.signal);
 
+    // Start xyops monitoring bridge if enabled
+    const { getXyopsConfig } = await import('@/lib/env');
+    const xyopsCfg = getXyopsConfig();
+    if (xyopsCfg.baseUrl && xyopsCfg.apiKey) {
+      const { XyopsClient } = await import('@/lib/xyops');
+      const ops = new XyopsClient(xyopsCfg);
+      ops.run(ac.signal);
+    }
+
     // Clean shutdown: abort registry loops and write shutdown event
     const shutdownRegistry = () => {
       ac.abort();

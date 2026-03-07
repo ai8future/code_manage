@@ -11,9 +11,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ai8future/call": "file:../../chassis_suite/chassis-ts/packages/call",
     "@ai8future/chassis": "file:../../chassis_suite/chassis-ts/packages/chassis",
     "@ai8future/config": "file:../../chassis_suite/chassis-ts/packages/config",
     "@ai8future/errors": "file:../../chassis_suite/chassis-ts/packages/errors",
+    "@ai8future/flagz": "file:../../chassis_suite/chassis-ts/packages/flagz",
     "@ai8future/logger": "file:../../chassis_suite/chassis-ts/packages/logger",
     "@ai8future/registry": "file:../../chassis_suite/chassis-ts/packages/registry",
     "@ai8future/secval": "file:../../chassis_suite/chassis-ts/packages/secval",

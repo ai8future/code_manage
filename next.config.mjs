@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: [
+    '@ai8future/call',
     '@ai8future/chassis',
     '@ai8future/config',
     '@ai8future/errors',
+    '@ai8future/flagz',
     '@ai8future/logger',
     '@ai8future/registry',
     '@ai8future/secval',
