@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.8] - 2026-03-07
+
+### Changed
+- Upgrade chassis integration from v5.0.0 to v6.0.8
+- `lib/chassis/secval.ts`: updated dangerous keys to match v6 (added `__definegetter__`, `__definesetter__`, `__lookupgetter__`, `__lookupsetter__`; removed `include`, `import`, `system`, `command` to avoid false positives on business-domain JSON); added 5MB `MAX_INPUT_SIZE` guard; stopped leaking key names in error messages
+- `lib/chassis/work.ts`: added GC cleanup in `workStream` (null out yielded results to allow garbage collection)
+- Version headers updated to `v6.0.8` across all chassis modules
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.7] - 2026-03-07
 
 ### Fixed

@@ -1,4 +1,4 @@
-// Adapted from @ai8future/work v6 — structured concurrency patterns
+// Adapted from @ai8future/work v6.0.8 — structured concurrency patterns
 // Simplified for Next.js: no OTel spans, no version gate
 
 import { availableParallelism, cpus } from 'os';
@@ -191,9 +191,12 @@ export async function* workStream<T, R>(
     })();
     pending.push(p);
 
-    // Yield any completed results (O(1) per yield via index)
+    // Yield any completed results, nulling out references to allow GC
     while (yieldIndex < results.length) {
-      yield results[yieldIndex++]!;
+      const result = results[yieldIndex] as Result<R>;
+      results[yieldIndex] = undefined as unknown as Result<R>;
+      yieldIndex++;
+      yield result;
     }
   }
 
@@ -202,6 +205,9 @@ export async function* workStream<T, R>(
 
   // Yield remaining results
   while (yieldIndex < results.length) {
-    yield results[yieldIndex++]!;
+    const result = results[yieldIndex] as Result<R>;
+    results[yieldIndex] = undefined as unknown as Result<R>;
+    yieldIndex++;
+    yield result;
   }
 }

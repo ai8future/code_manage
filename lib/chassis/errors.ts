@@ -1,4 +1,4 @@
-// Adapted from @ai8future/errors v6 — unified error type with dual HTTP and gRPC status codes
+// Adapted from @ai8future/errors v6.0.8 — unified error type with dual HTTP and gRPC status codes
 
 /** gRPC status code names matching google.rpc.Code. */
 export type GrpcCode =

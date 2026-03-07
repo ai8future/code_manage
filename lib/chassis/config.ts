@@ -1,4 +1,4 @@
-// Adapted from @ai8future/config v6 — Zod v4 config loading with fail-fast validation
+// Adapted from @ai8future/config v6.0.8 — Zod v4 config loading with fail-fast validation
 import { z, type ZodType } from 'zod';
 
 /**

@@ -1,4 +1,7 @@
-// Adapted from @ai8future/secval v6 — JSON security validation
+// Adapted from @ai8future/secval v6.0.8 — JSON security validation
+//
+// Do not use secval on file uploads or streaming endpoints.
+// Enforce body size limits BEFORE passing data to secval.
 
 /** Module-local error — NOT a ServiceError. */
 export class SecvalError extends Error {
@@ -10,30 +13,36 @@ export class SecvalError extends Error {
 }
 
 const DANGEROUS_KEYS = new Set([
+  // Prototype pollution
   '__proto__',
   'constructor',
   'prototype',
-  'execute',
+  '__definegetter__',
+  '__definesetter__',
+  '__lookupgetter__',
+  '__lookupsetter__',
+  // Code injection
   'eval',
-  'include',
-  'import',
-  'require',
-  'system',
-  'shell',
-  'script',
   'exec',
   'spawn',
   'fork',
-  'command',
+  'shell',
+  'script',
+  'execute',
+  'require',
 ]);
 
 const MAX_NESTING_DEPTH = 20;
+const MAX_INPUT_SIZE = 5_242_880; // 5MB
 
 /**
  * Parses data as JSON and scans for dangerous keys and excessive nesting.
  * Throws SecvalError on violation. Use JSON.parse() separately for the parsed value.
  */
 export function validateJSON(data: string): void {
+  if (data.length > MAX_INPUT_SIZE) {
+    throw new SecvalError(`input size ${data.length} exceeds maximum ${MAX_INPUT_SIZE}`);
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(data);
@@ -59,7 +68,7 @@ function walkValue(value: unknown, depth: number): void {
     for (const key of Object.keys(value)) {
       const normalised = key.toLowerCase().replaceAll('-', '_');
       if (DANGEROUS_KEYS.has(normalised)) {
-        throw new SecvalError(`dangerous key detected: "${key}"`);
+        throw new SecvalError('dangerous key detected');
       }
       walkValue((value as Record<string, unknown>)[key], depth + 1);
     }
