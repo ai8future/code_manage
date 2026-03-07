@@ -1,4 +1,4 @@
-// Adapted from @ai8future/chassis v6 — deterministic port derivation using djb2 hashing
+// Deterministic port derivation using djb2 hashing
 
 const MIN_PORT = 5000;
 const MAX_PORT = 48000;

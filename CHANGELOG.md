@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.11] - 2026-03-07
+
+### Changed
+- Remove stale "Adapted from @ai8future" comments in `lib/ports.ts` and `lib/logger.ts`
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.10] - 2026-03-07
 
 ### Changed

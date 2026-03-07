@@ -1,4 +1,4 @@
-// Adapted from @ai8future/logger — structured JSON logging with sensitive field redaction
+// Structured JSON logging with sensitive field redaction
 import pino from 'pino';
 import { env } from './env';
 import { trackRequestStart, trackRequestEnd } from './diagnostics';
