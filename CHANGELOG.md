@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.7] - 2026-03-07
+
+### Fixed
+- Silent process death caused by `healthTimer.unref()` — if the HTTP server socket closed for any reason, the unref'd timer wouldn't keep the event loop alive, causing the process to exit silently with no error, no signal, and no crash log entry
+- Added `beforeExit` and `exit` handlers to catch event loop drain and log the cause before death
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.6] - 2026-03-07
 - Sync uncommitted changes
 

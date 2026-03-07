@@ -115,6 +115,25 @@ export function installCrashHandlers(log: pino.Logger): void {
     log.info(takeHealthSnapshot(), 'Received SIGINT — shutting down');
     process.exit(0);
   });
+
+  // Catch event loop drain — fires when Node has no more work scheduled.
+  // This is the silent killer: if the HTTP server socket closes and the
+  // health timer is unref'd, the event loop empties and the process exits
+  // with no signal and no error.
+  process.on('beforeExit', (code) => {
+    log.fatal(
+      { code, ...takeHealthSnapshot() },
+      `beforeExit (code ${code}) — event loop drained, process about to exit silently`,
+    );
+  });
+
+  process.on('exit', (code) => {
+    // Sync-only: last chance to log before death
+    log.fatal(
+      { code, pid: process.pid, uptimeSeconds: Math.round(process.uptime()) },
+      `Process exit (code ${code})`,
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,8 +157,13 @@ export function startHealthMonitor(log: pino.Logger): void {
     }
   }, HEALTH_INTERVAL_MS);
 
-  // Don't prevent graceful shutdown
-  if (healthTimer.unref) healthTimer.unref();
+  // NOTE: Do NOT unref() this timer. Previously we called healthTimer.unref()
+  // to "not prevent graceful shutdown", but this caused silent process death:
+  // if the HTTP server socket closes for any reason, the unref'd timer won't
+  // keep the event loop alive, so the process exits silently with no error,
+  // no signal, and no log entry. Keeping it ref'd ensures the process stays
+  // alive and the beforeExit handler fires if something goes wrong.
+  // Graceful shutdown is handled by the SIGTERM/SIGINT handlers instead.
 }
 
 // ---------------------------------------------------------------------------
