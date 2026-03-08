@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.14] - 2026-03-08
+
+### Changed
+- Complete chassis v8 integration review and cleanup
+- `instrumentation.ts`: use `PORT_HTTP` constant from `@ai8future/chassis` instead of magic number `0` for registry port declaration
+- `instrumentation.ts`: add `registry.status()` calls for operational visibility (server initialized, xyops bridge started)
+- `instrumentation.ts`: register `invalidate-cache` custom command via `registry.handle()` for external cache control
+- `instrumentation.ts`: report request errors to registry via `registry.error()` in `onRequestError` hook
+
+### Removed
+- `lib/ports.ts`: dead code — duplicated chassis `port()` function but was not imported by any file
+
+### Fixed
+- Rebuild `@ai8future/config` package against Zod v4 to resolve `ZodType` type incompatibility that broke `next build`
+
+### Agent
+- Claude:Opus 4.6
+
 ## [1.4.13] - 2026-03-07
 
 ### Fixed

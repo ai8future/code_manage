@@ -5,7 +5,7 @@ export async function register() {
   // Only install in Node.js runtime (not edge)
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
     // Version gate — must be called before any other chassis module
-    const { requireMajor } = await import('@ai8future/chassis');
+    const { requireMajor, PORT_HTTP } = await import('@ai8future/chassis');
     requireMajor(8);
 
     const { crashLogger, installCrashHandlers, startHealthMonitor, logStartup } =
@@ -13,6 +13,7 @@ export async function register() {
     const registry = await import('@ai8future/registry');
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
+    const { invalidateProjectCache } = await import('@/lib/scan-cache');
 
     logStartup();
     installCrashHandlers(crashLogger);
@@ -25,7 +26,14 @@ export async function register() {
     } catch { /* use default */ }
 
     const ac = new AbortController();
-    registry.port(0, 7491, 'Next.js dev server');
+    registry.port(PORT_HTTP, 7491, 'Next.js dev server');
+
+    // Register custom commands before init() so they appear in PID.json
+    registry.handle('invalidate-cache', 'Clear the project scan cache', () => {
+      invalidateProjectCache();
+      registry.status('project scan cache invalidated');
+    });
+
     registry.init(ac, chassisVersion);
 
     // Start heartbeat and command polling in background
@@ -39,7 +47,10 @@ export async function register() {
       const { XyopsClient } = await import('@/lib/xyops');
       const ops = new XyopsClient(xyopsCfg);
       ops.run(ac.signal);
+      registry.status('xyops monitoring bridge started');
     }
+
+    registry.status('server initialized');
 
     // Clean shutdown: abort registry loops and write shutdown event
     const shutdownRegistry = () => {
@@ -63,6 +74,9 @@ export async function onRequestError(
   // Only log in Node.js runtime
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
     const { crashLogger, takeHealthSnapshot } = await import('@/lib/diagnostics');
+    const registry = await import('@ai8future/registry');
+
+    const msg = `Request error in ${context.routePath}: ${err.message}`;
 
     crashLogger.error(
       {
@@ -71,7 +85,10 @@ export async function onRequestError(
         context,
         snapshot: takeHealthSnapshot(),
       },
-      `Request error in ${context.routePath}: ${err.message}`,
+      msg,
     );
+
+    // Report to registry for operational visibility
+    try { registry.error(msg, err); } catch { /* registry may not be initialized yet */ }
   }
 }
