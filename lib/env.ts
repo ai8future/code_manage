@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { requireMajor } from '@ai8future/chassis';
 import { mustLoad } from '@ai8future/config';
 
-requireMajor(8);
+requireMajor(9);
 
 const EnvSchema = z.object({
   codeBasePath: z

@@ -6,7 +6,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
     // Version gate — must be called before any other chassis module
     const { requireMajor, PORT_HTTP } = await import('@ai8future/chassis');
-    requireMajor(8);
+    requireMajor(9);
 
     const { crashLogger, installCrashHandlers, startHealthMonitor, logStartup } =
       await import('@/lib/diagnostics');

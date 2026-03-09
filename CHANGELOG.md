@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0] - 2026-03-08
+
+### Changed
+- **Upgraded chassis-ts from v8 to v9** (major version upgrade)
+- Updated `requireMajor(8)` to `requireMajor(9)` in instrumentation.ts, lib/env.ts, and tests/setup.ts
+- Updated VERSION.chassis from 8.0.0 to 9.0.0
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.4.14] - 2026-03-08
 
 ### Changed
