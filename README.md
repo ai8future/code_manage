@@ -49,7 +49,8 @@ Moving a project between statuses is done by physically renaming its directory.
 | Validation | Zod |
 | Logging | Pino |
 | Markdown | react-markdown, remark-gfm, react-syntax-highlighter, @uiw/react-md-editor |
-| Concurrency | Custom Semaphore + workMap/workAll/workRace/workStream |
+| Chassis | `@ai8future/*` packages via `file:` protocol (errors, work, secval, logger, config, flagz, call, registry) |
+| Concurrency | `@ai8future/work` — Semaphore-based bounded concurrency (workMap, workAll, workRace, workStream) |
 | Testing | Vitest |
 | Linting | ESLint (flat config) |
 
@@ -175,10 +176,6 @@ Directories that are always skipped: `node_modules`, `.git`, `__pycache__`, `.ne
 | `lib/git.ts` | Git subprocess utility with output size caps |
 | `lib/ports.ts` | Deterministic port assignment from project name (MD5 hash) |
 | `lib/schemas.ts` | Zod schemas for all API request validation |
-| `lib/chassis/errors.ts` | ServiceError class with HTTP/gRPC codes, RFC 9457 Problem Details |
-| `lib/chassis/work.ts` | Semaphore-based bounded concurrency: workMap, workRace, workAll, workStream |
-| `lib/chassis/secval.ts` | JSON security validator (prototype pollution, nesting depth) |
-| `lib/chassis/config.ts` | Fail-fast environment validation via mustLoad() |
 | `lib/api/pathSecurity.ts` | Path traversal and symlink escape prevention |
 | `lib/api/validate.ts` | Request body parsing with optional security validation |
 | `lib/api/errors.ts` | Next.js error response adapters |
