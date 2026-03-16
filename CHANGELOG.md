@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.1] - 2026-03-16
+
+### Changed
+- Replace manual shutdown handlers with chassis lifecycle's `run()` in `instrumentation.ts`
+- Remove manual `AbortController`, `registry.init()`, `registry.startHeartbeat()`, `registry.startCommandPoll()`, and `process.on('SIGTERM'/'SIGINT'/'exit')` handlers — all now managed by `@ai8future/lifecycle`
+- Remove duplicate SIGTERM/SIGINT handlers from `lib/diagnostics.ts` (lifecycle handles graceful shutdown)
+
+### Added
+- `@ai8future/lifecycle` dependency for graceful shutdown orchestration
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.5.0] - 2026-03-08
 
 ### Changed

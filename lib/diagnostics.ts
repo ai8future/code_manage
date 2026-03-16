@@ -106,15 +106,9 @@ export function installCrashHandlers(log: pino.Logger): void {
     // Let the process crash naturally after logging
   });
 
-  process.on('SIGTERM', () => {
-    log.info(takeHealthSnapshot(), 'Received SIGTERM — shutting down');
-    process.exit(0);
-  });
-
-  process.on('SIGINT', () => {
-    log.info(takeHealthSnapshot(), 'Received SIGINT — shutting down');
-    process.exit(0);
-  });
+  // NOTE: SIGTERM/SIGINT handlers are managed by @ai8future/lifecycle's run(),
+  // which coordinates graceful shutdown via AbortController. No manual signal
+  // handling here — lifecycle takes care of it.
 
   // Catch event loop drain — fires when Node has no more work scheduled.
   // This is the silent killer: if the HTTP server socket closes and the

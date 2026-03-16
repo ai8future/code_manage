@@ -11,6 +11,7 @@ export async function register() {
     const { crashLogger, installCrashHandlers, startHealthMonitor, logStartup } =
       await import('@/lib/diagnostics');
     const registry = await import('@ai8future/registry');
+    const { run } = await import('@ai8future/lifecycle');
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
     const { invalidateProjectCache } = await import('@/lib/scan-cache');
@@ -19,49 +20,52 @@ export async function register() {
     installCrashHandlers(crashLogger);
     startHealthMonitor(crashLogger);
 
-    // Initialize chassis registry — writes PID.json to /tmp/chassis/<service>/
+    // Read chassis version for registry metadata
     let chassisVersion = 'unknown';
     try {
       chassisVersion = readFileSync(join(process.cwd(), 'VERSION.chassis'), 'utf-8').trim();
     } catch { /* use default */ }
 
-    const ac = new AbortController();
+    // Declare port and custom commands before run() initializes registry
     registry.port(PORT_HTTP, 7491, 'Next.js dev server');
 
-    // Register custom commands before init() so they appear in PID.json
     registry.handle('invalidate-cache', 'Clear the project scan cache', () => {
       invalidateProjectCache();
       registry.status('project scan cache invalidated');
     });
 
-    registry.init(ac, chassisVersion);
+    // lifecycle.run() handles SIGTERM/SIGINT, initializes registry,
+    // starts heartbeat & command polling, and coordinates graceful shutdown.
+    // We fire-and-forget since Next.js owns the HTTP server lifecycle.
+    const lifecyclePromise = run(
+      // Main component: keeps alive until abort signal, then shuts down cleanly
+      async (signal) => {
+        // Start xyops monitoring bridge if enabled
+        const { getXyopsConfig } = await import('@/lib/env');
+        const xyopsCfg = getXyopsConfig();
+        if (xyopsCfg.baseUrl && xyopsCfg.apiKey) {
+          const { XyopsClient } = await import('@/lib/xyops');
+          const ops = new XyopsClient(xyopsCfg);
+          ops.run(signal);
+          registry.status('xyops monitoring bridge started');
+        }
 
-    // Start heartbeat and command polling in background
-    registry.startHeartbeat(ac.signal);
-    registry.startCommandPoll(ac.signal);
+        registry.status('server initialized');
 
-    // Start xyops monitoring bridge if enabled
-    const { getXyopsConfig } = await import('@/lib/env');
-    const xyopsCfg = getXyopsConfig();
-    if (xyopsCfg.baseUrl && xyopsCfg.apiKey) {
-      const { XyopsClient } = await import('@/lib/xyops');
-      const ops = new XyopsClient(xyopsCfg);
-      ops.run(ac.signal);
-      registry.status('xyops monitoring bridge started');
-    }
+        // Wait until the abort signal fires (SIGTERM/SIGINT)
+        await new Promise<void>((resolve) => {
+          if (signal.aborted) {
+            resolve();
+            return;
+          }
+          signal.addEventListener('abort', () => resolve(), { once: true });
+        });
+      },
+    );
 
-    registry.status('server initialized');
-
-    // Clean shutdown: abort registry loops and write shutdown event
-    const shutdownRegistry = () => {
-      ac.abort();
-      registry.shutdown(`process exit (PID ${process.pid})`);
-    };
-    process.on('SIGTERM', shutdownRegistry);
-    process.on('SIGINT', shutdownRegistry);
-    process.on('exit', () => {
-      // Last-chance sync cleanup if signal handlers didn't run (e.g., SIGKILL)
-      registry.shutdown(`process exit (PID ${process.pid})`);
+    // Log lifecycle errors but don't crash Next.js
+    lifecyclePromise.catch((err) => {
+      crashLogger.error({ err }, 'Lifecycle run() exited with error');
     });
   }
 }
