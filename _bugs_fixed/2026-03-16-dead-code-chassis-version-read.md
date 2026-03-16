@@ -1,0 +1,1 @@
+Dead code left behind after lifecycle.run() refactoring: `readFileSync` import from `node:fs`, `join` import from `node:path`, and `chassisVersion` variable that read VERSION.chassis. None of these were referenced after lifecycle took over passing its own VERSION constant to registry.init(). Removed all three.

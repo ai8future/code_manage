@@ -12,19 +12,11 @@ export async function register() {
       await import('@/lib/diagnostics');
     const registry = await import('@ai8future/registry');
     const { run } = await import('@ai8future/lifecycle');
-    const { readFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
     const { invalidateProjectCache } = await import('@/lib/scan-cache');
 
     logStartup();
     installCrashHandlers(crashLogger);
     startHealthMonitor(crashLogger);
-
-    // Read chassis version for registry metadata
-    let chassisVersion = 'unknown';
-    try {
-      chassisVersion = readFileSync(join(process.cwd(), 'VERSION.chassis'), 'utf-8').trim();
-    } catch { /* use default */ }
 
     // Declare port and custom commands before run() initializes registry
     registry.port(PORT_HTTP, 7491, 'Next.js dev server');

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.2] - 2026-03-16
+
+### Removed
+- Dead code in `instrumentation.ts`: `readFileSync` import from `node:fs`, `join` import from `node:path`, and `chassisVersion` variable that read VERSION.chassis — no longer needed after lifecycle.run() refactoring
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.5.1] - 2026-03-16
 
 ### Changed
