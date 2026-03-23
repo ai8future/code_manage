@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.3] - 2026-03-22
+
+### Changed
+- **Upgraded chassis-ts from v9 to v10** (major version upgrade)
+- Updated `requireMajor(9)` to `requireMajor(10)` in instrumentation.ts, lib/env.ts, and tests/setup.ts
+- Updated VERSION.chassis from 9.0.0 to 10.0.0
+- Replaced hardcoded port 7491 with deterministic `port('code_manage', PORT_HTTP)` (resolves to 10467) in instrumentation.ts
+- Updated dev script port from 7491 to 10467 to match deterministic port assignment
+- Added `@ai8future/lifecycle` to `serverExternalPackages` in next.config.mjs
+- Fixed missing `@ai8future/lifecycle` symlink in node_modules
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.5.2] - 2026-03-16
 
 ### Removed

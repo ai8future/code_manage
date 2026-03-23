@@ -1,5 +1,6 @@
 import { Project } from './types';
 import { scanAllProjects } from './scanner';
+import { publishScanCompleted } from './eventbus';
 
 const CACHE_TTL_MS = 10_000; // 10 seconds
 
@@ -28,10 +29,18 @@ export async function getCachedProjects(): Promise<Project[]> {
   }
 
   // Start a new scan and share the promise
+  const scanStart = Date.now();
   inflight = scanAllProjects()
     .then((projects) => {
       cached = { projects, timestamp: Date.now() };
       inflight = null;
+
+      // --- chassis: kafkakit — publish scan.completed event ---
+      publishScanCompleted({
+        project_count: projects.length,
+        scan_duration_ms: Date.now() - scanStart,
+      });
+
       return projects;
     })
     .catch((err) => {

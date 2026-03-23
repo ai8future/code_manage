@@ -1,0 +1,12 @@
+{
+  "chassis": "10.0",
+  "name": "code_manage",
+  "environment": {
+    "env": "development",
+    "provider": "local"
+  },
+  "endpoints": {
+    "http": { "port": 10467, "protocol": "http", "path": "/" }
+  },
+  "dependencies": []
+}

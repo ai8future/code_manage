@@ -1,2 +1,2 @@
 import { requireMajor } from '@ai8future/chassis';
-requireMajor(9);
+requireMajor(10);
