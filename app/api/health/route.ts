@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server';
-import { takeHealthSnapshot, inflightRequests } from '@/lib/diagnostics';
+import { runAll, type Check } from '@ai8future/health';
+import { takeHealthSnapshot } from '@/lib/diagnostics';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  const snapshot = takeHealthSnapshot();
-  const inflight = Array.from(inflightRequests.entries()).map(([key, entry]) => ({
-    key,
-    route: entry.route,
-    requestId: entry.requestId,
-    durationMs: Date.now() - entry.startedAt,
-  }));
+const checks: Record<string, Check> = {
+  process: async () => {
+    const snapshot = takeHealthSnapshot();
+    if (snapshot.rssMB > 1024) {
+      throw new Error(`RSS too high: ${snapshot.rssMB}MB`);
+    }
+  },
+};
 
-  return NextResponse.json({ snapshot, inflight });
+export async function GET() {
+  const { results, healthy } = await runAll(checks, AbortSignal.timeout(5000));
+  return NextResponse.json(
+    { status: healthy ? 'healthy' : 'unhealthy', checks: results },
+    { status: healthy ? 200 : 503 }
+  );
 }

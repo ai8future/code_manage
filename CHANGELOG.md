@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.5] - 2026-03-25
+
+### Changed
+- Replace custom health endpoint with standard @ai8future/health runAll() pattern
+- Health route now returns structured { status, checks } with 200/503 status codes
+- Add @ai8future/health package symlink to node_modules
+- Process health check validates RSS memory stays under 1024MB
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.5.4] - 2026-03-25
 
 ### Changed
