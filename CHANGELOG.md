@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.4] - 2026-03-25
+
+### Changed
+- Rename KAFKA_* env var references to KAFKAKIT_* in lib/eventbus.ts for chassis v10 convention alignment
+  - `KAFKA_BOOTSTRAP_SERVERS` → `KAFKAKIT_BOOTSTRAP_SERVERS`
+  - `KAFKA_SCHEMA_REGISTRY_URL` → `KAFKAKIT_SCHEMA_REGISTRY_URL`
+  - `KAFKA_TENANT_ID` → `KAFKAKIT_TENANT_ID`
+- Enables lifecycle auto-wiring of heartbeat/announcekit via kafkakit env prefix
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.5.3] - 2026-03-22
 
 ### Changed

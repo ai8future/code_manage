@@ -9,15 +9,15 @@ import { createPublisher, type Publisher } from '@ai8future/kafkakit';
 let _pub: Publisher | undefined;
 let _initPromise: Promise<void> | undefined;
 
-/** Initialize the kafkakit publisher if KAFKA_BOOTSTRAP_SERVERS is set. */
+/** Initialize the kafkakit publisher if KAFKAKIT_BOOTSTRAP_SERVERS is set. */
 export function initEventBus(): void {
-  const bootstrapServers = process.env.KAFKA_BOOTSTRAP_SERVERS;
+  const bootstrapServers = process.env.KAFKAKIT_BOOTSTRAP_SERVERS;
   if (!bootstrapServers || _initPromise) return;
 
   _initPromise = createPublisher({
     bootstrapServers,
-    schemaRegistryUrl: process.env.KAFKA_SCHEMA_REGISTRY_URL ?? '',
-    tenantId: process.env.KAFKA_TENANT_ID ?? 'ai8',
+    schemaRegistryUrl: process.env.KAFKAKIT_SCHEMA_REGISTRY_URL ?? '',
+    tenantId: process.env.KAFKAKIT_TENANT_ID ?? 'ai8',
     source: 'code_manage',
   })
     .then((p) => {
