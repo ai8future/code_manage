@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.6] - 2026-03-27
+
+### Added
+- 7 new test files adding 62 test cases for previously untested pure functions and API helpers:
+  - `tests/lib/git.test.ts` — parseNumstatLine (9 tests, regex parsing with all code paths)
+  - `tests/lib/utils/dates.test.ts` — formatRelativeDate and formatShortDate (8 tests, all branches)
+  - `tests/lib/utils/grades.test.ts` — getGradeColor, getGradeBgColor, getGradeClasses (11 tests, threshold boundaries)
+  - `tests/lib/scanner-helpers.test.ts` — isSuiteDirectory and formatSuiteName (10 tests, edge cases)
+  - `tests/lib/diagnostics.test.ts` — trackRequestStart/End and takeHealthSnapshot (7 tests, inflight tracking)
+  - `tests/lib/api/validate.test.ts` — parseBody and parseSecureBody (10 tests, including prototype pollution)
+  - `tests/lib/api/errors.test.ts` — conflictError and pathErrorResponse (7 tests, RFC 9457 compliance)
+
+---
+Agent: Claude Code:Opus 4.6
+
 ## [1.5.5] - 2026-03-25
 
 ### Changed

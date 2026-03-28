@@ -88,7 +88,7 @@ Set environment variables or use defaults:
 ### Run
 
 ```bash
-# Development (port 7491)
+# Development (port 10467)
 npm run dev
 
 # Production
@@ -174,7 +174,6 @@ Directories that are always skipped: `node_modules`, `.git`, `__pycache__`, `.ne
 | `lib/env.ts` | Zod-validated environment configuration |
 | `lib/logger.ts` | Pino structured logger with field redaction |
 | `lib/git.ts` | Git subprocess utility with output size caps |
-| `lib/ports.ts` | Deterministic port assignment from project name (MD5 hash) |
 | `lib/schemas.ts` | Zod schemas for all API request validation |
 | `lib/api/pathSecurity.ts` | Path traversal and symlink escape prevention |
 | `lib/api/validate.ts` | Request body parsing with optional security validation |
