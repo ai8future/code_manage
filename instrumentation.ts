@@ -6,7 +6,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs' || !process.env.NEXT_RUNTIME) {
     // Version gate — must be called before any other chassis module
     const { requireMajor, port, PORT_HTTP } = await import('@ai8future/chassis');
-    requireMajor(10);
+    requireMajor(11);
 
     const { crashLogger, installCrashHandlers, startHealthMonitor, logStartup } =
       await import('@/lib/diagnostics');
@@ -58,16 +58,6 @@ export async function register() {
     const lifecyclePromise = run(
       // Main component: keeps alive until abort signal, then shuts down cleanly
       async (signal) => {
-        // Start xyops monitoring bridge if enabled
-        const { getXyopsConfig } = await import('@/lib/env');
-        const xyopsCfg = getXyopsConfig();
-        if (xyopsCfg.baseUrl && xyopsCfg.apiKey) {
-          const { XyopsClient } = await import('@/lib/xyops');
-          const ops = new XyopsClient(xyopsCfg);
-          ops.run(signal);
-          registry.status('xyops monitoring bridge started');
-        }
-
         registry.status('server initialized');
 
         // Wait until the abort signal fires (SIGTERM/SIGINT)

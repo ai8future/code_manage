@@ -1,5 +1,5 @@
 {
-  "chassis": "10.0",
+  "chassis": "11.0",
   "name": "code_manage",
   "environment": {
     "env": "development",
