@@ -16,6 +16,7 @@
     "@ai8future/config": "file:../../chassis_suite/chassis-ts/packages/config",
     "@ai8future/errors": "file:../../chassis_suite/chassis-ts/packages/errors",
     "@ai8future/flagz": "file:../../chassis_suite/chassis-ts/packages/flagz",
+    "@ai8future/health": "file:../../chassis_suite/chassis-ts/packages/health",
     "@ai8future/kafkakit": "file:../../chassis_suite/chassis-ts/packages/kafkakit",
     "@ai8future/lifecycle": "file:../../chassis_suite/chassis-ts/packages/lifecycle",
     "@ai8future/logger": "file:../../chassis_suite/chassis-ts/packages/logger",

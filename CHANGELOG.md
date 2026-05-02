@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.8 - 2026-05-02
+
+### Fixed
+- Declare the direct `@ai8future/health` dependency used by the health route so clean installs resolve the chassis health package explicitly.
+
+### Notes
+- Agent: Codex:gpt-5.5-high
+
 ## 1.5.7 - 2026-05-02
 
 ### Changed
