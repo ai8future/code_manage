@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.7 - 2026-05-02
+
+### Changed
+- Declare chassis-ts 11.1.7 alignment.
+
+### Notes
+- Agent: Codex:gpt-5.5-high
+
 ## [1.5.6] - 2026-03-27
 
 ### Added
