@@ -153,7 +153,6 @@ Code Manager integrates with a broader operational ecosystem:
 - **Lifecycle management** (`@ai8future/lifecycle`) -- handles SIGTERM/SIGINT, coordinates graceful shutdown, manages heartbeat and command polling.
 - **Event bus** (`@ai8future/kafkakit`) -- publishes `ai8.builder.code.scan.completed` events when scans finish, for integration with other services. Degrades gracefully if Kafka is not configured.
 - **Observability** (`@ai8future/otel`) -- optional OpenTelemetry integration for distributed tracing.
-- **XYOps monitoring** -- optional background health metric push (RSS, heap, uptime) to an external operational visibility platform.
 - **Feature flags** (`@ai8future/flagz`) -- environment-variable-based feature flags with `FLAG_` prefix.
 - **Health endpoint** (`/api/health`) -- returns healthy/unhealthy status based on process memory (threshold: 1GB RSS).
 - **Crash diagnostics** -- sync-safe crash logging to `.next/crash.log`, unhandled rejection/exception handlers, periodic health snapshots (60s), inflight request tracking, and before-exit detection to catch silent process death.
