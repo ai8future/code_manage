@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { FileText, ChevronDown, ChevronRight, X, Loader2, ExternalLink, Pencil, Archive } from 'lucide-react';
 import { MarkdownEditor } from '@/components/editor/MarkdownEditor';
 import ReactMarkdown from 'react-markdown';
@@ -197,7 +197,7 @@ export function DocsCard({ projectPath }: DocsCardProps) {
   const [selectedDoc, setSelectedDoc] = useState<DocFile | null>(null);
   const [editingDoc, setEditingDoc] = useState<DocFile | null>(null);
 
-  const fetchDocs = () => {
+  const fetchDocs = useCallback(() => {
     fetch(`/api/projects/docs?path=${encodeURIComponent(projectPath)}`)
       .then(res => res.json())
       .then(data => {
@@ -205,11 +205,11 @@ export function DocsCard({ projectPath }: DocsCardProps) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  };
+  }, [projectPath]);
 
   useEffect(() => {
     fetchDocs();
-  }, [projectPath]);
+  }, [fetchDocs]);
 
   const getDocPath = (doc: DocFile) => {
     return doc.source === 'vault' && doc.vaultPath ? doc.vaultPath : projectPath;

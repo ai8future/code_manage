@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Project } from '@/lib/types';
@@ -22,7 +22,7 @@ export default function ProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [showTerminal, setShowTerminal] = useState(false);
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const response = await fetch(`/api/projects/${slug}`);
       if (!response.ok) {
@@ -38,11 +38,11 @@ export default function ProjectPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
 
   useEffect(() => {
     fetchProject();
-  }, [slug]);
+  }, [fetchProject]);
 
   if (loading) {
     return (

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.11 - 2026-06-10
+
+### Fixed
+- Resolved all 6 ESLint findings (2 errors + 4 warnings) surfaced by the Next.js 16.2 React-hooks ruleset. `eslint .` is now clean.
+  - `components/sidebar/SidebarContext.tsx`: replaced the `setState`-in-effect + `mounted` hydration guard with `useSyncExternalStore` reading the localStorage-backed value (idiomatic, SSR-safe, also syncs across tabs).
+  - `app/activity/page.tsx`: moved the velocity fetch into a cancellation-guarded async function, which clears the `set-state-in-effect` error and fixes a latent stale-response race when switching time ranges quickly.
+  - `app/project/[slug]/page.tsx` and `components/project/DocsCard.tsx`: wrapped `fetchProject` / `fetchDocs` in `useCallback` and listed them in their effect deps (`react-hooks/exhaustive-deps`).
+  - `components/dashboard/ProjectTable.tsx`: memoized `handleToggleStar` with `useCallback` and added it plus the already-stable action handlers to the `columns` memo deps.
+  - `eslint.config.mjs`: assigned the config to a named const before default export (`import/no-anonymous-default-export`).
+
+### Notes
+- Verified: `eslint .` exits 0, production build succeeds, all 123 tests pass, and `/`, `/activity`, `/project/[slug]` render with 200. Behavior preserved.
+- Agent: Claude:Opus 4.8 (1M context)
+
 ## 1.5.10 - 2026-06-10
 
 ### Changed

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   useReactTable,
@@ -56,7 +56,7 @@ export function ProjectTable({ title = 'All Projects', status, excludeStatuses }
 
   const { openInEditor, openInFinder, copyPath } = useProjectActions();
 
-  const handleToggleStar = async (project: Project) => {
+  const handleToggleStar = useCallback(async (project: Project) => {
     try {
       const response = await fetch(`/api/projects/${project.slug}`, {
         method: 'PATCH',
@@ -68,7 +68,7 @@ export function ProjectTable({ title = 'All Projects', status, excludeStatuses }
     } catch (err) {
       console.error('Failed to toggle star:', err);
     }
-  };
+  }, [refresh]);
 
   const columns = useMemo(
     () => [
@@ -267,7 +267,7 @@ export function ProjectTable({ title = 'All Projects', status, excludeStatuses }
         },
       }),
     ],
-    []
+    [handleToggleStar, openInEditor, openInFinder, copyPath]
   );
 
   const table = useReactTable({

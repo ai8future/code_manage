@@ -41,15 +41,25 @@ export default function ActivityPage() {
       '30d': 30,
       '90d': 90,
     };
+    let active = true;
 
-    setLoading(true);
-    fetch(`/api/activity/velocity?days=${daysMap[timeRange]}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setVelocityData(data.data || []);
-      })
-      .catch((error) => console.error('Error fetching velocity data:', error))
-      .finally(() => setLoading(false));
+    async function loadVelocity() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/activity/velocity?days=${daysMap[timeRange]}`);
+        const data = res.ok ? await res.json() : null;
+        if (active && data) setVelocityData(data.data || []);
+      } catch (error) {
+        console.error('Error fetching velocity data:', error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadVelocity();
+    return () => {
+      active = false;
+    };
   }, [timeRange]);
 
   const formatDate = (dateStr: string) => {

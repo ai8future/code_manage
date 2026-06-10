@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useCallback, useSyncExternalStore, ReactNode } from 'react';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -12,35 +12,39 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'code-manage-sidebar-collapsed';
 
-export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsedState] = useState(false);
-  const [mounted, setMounted] = useState(false);
+// localStorage-backed external store. useSyncExternalStore reads it on the
+// client and falls back to the server snapshot during SSR/hydration, which
+// avoids both a hydration mismatch and calling setState inside an effect.
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) {
-      setCollapsedState(stored === 'true');
-    }
+function readCollapsed(): boolean {
+  return localStorage.getItem(STORAGE_KEY) === 'true';
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  window.addEventListener('storage', listener); // sync across tabs
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('storage', listener);
+  };
+}
+
+function getServerSnapshot(): boolean {
+  return false;
+}
+
+export function SidebarProvider({ children }: { children: ReactNode }) {
+  const collapsed = useSyncExternalStore(subscribe, readCollapsed, getServerSnapshot);
+
+  const setCollapsed = useCallback((value: boolean) => {
+    localStorage.setItem(STORAGE_KEY, String(value));
+    listeners.forEach((listener) => listener());
   }, []);
 
-  const setCollapsed = (value: boolean) => {
-    setCollapsedState(value);
-    localStorage.setItem(STORAGE_KEY, String(value));
-  };
-
-  const toggleCollapsed = () => {
-    setCollapsed(!collapsed);
-  };
-
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return (
-      <SidebarContext.Provider value={{ collapsed: false, toggleCollapsed: () => {}, setCollapsed: () => {} }}>
-        {children}
-      </SidebarContext.Provider>
-    );
-  }
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed(!readCollapsed());
+  }, [setCollapsed]);
 
   return (
     <SidebarContext.Provider value={{ collapsed, toggleCollapsed, setCollapsed }}>
