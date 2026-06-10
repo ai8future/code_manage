@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.10 - 2026-06-10
+
+### Changed
+- Upgraded Next.js `16.1.6` → `16.2.9` (latest; no Next.js 17 exists yet) and bumped `eslint-config-next` to match. Verified clean: production build succeeds, all 123 tests pass, dev server boots (~270ms, down from ~1.9s) and serves `/` and `/api/projects` with 200.
+- Migrated the `lint` script from `next lint` to `eslint .`. Next.js 16 removed the `next lint` command (the script had been silently broken); ESLint runs directly against the existing flat config.
+
+### Notes
+- `eslint .` surfaces 2 errors (`react-hooks/set-state-in-effect` in `app/activity/page.tsx` and `components/sidebar/SidebarContext.tsx`) and 4 warnings in pre-existing component code, newly enforced by the 16.2 hooks ruleset. Left untouched here to keep this a dependency-only change.
+- Agent: Claude:Opus 4.8 (1M context)
+
 ## 1.5.9 - 2026-06-10
 
 ### Fixed
