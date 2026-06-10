@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.9 - 2026-06-10
+
+### Fixed
+- `npm run dev` now passes `--webpack`. Next 16 defaults `next dev` to Turbopack, which cannot resolve the ESM-only `@ai8future/*` chassis packages symlinked from outside the project root, so the dev server crashed on startup with `Module not found`. The `next.config.mjs` resolver that injects the `import` export condition only applies under webpack (and `build` already used `--webpack`); the dev script now matches.
+
+### Notes
+- Agent: Claude:Opus 4.8 (1M context)
+
 ## 1.5.8 - 2026-05-02
 
 ### Fixed
