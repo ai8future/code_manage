@@ -6,6 +6,16 @@ Code Manager is a self-hosted developer dashboard that serves as a **command cen
 
 The product scans a root directory tree on the local filesystem, discovers every project it can find, and presents a unified web UI to browse, search, organize, inspect, and take action on them.
 
+It is one product within the **Builder suite** (it lives in `builder_suite/`), the set of internal tools that support building and operating the broader portfolio of services.
+
+---
+
+## Who Does It Serve?
+
+Code Manager is a **single-operator, self-hosted tool**. Its primary consumer is the developer (or the AI coding agents working on their behalf) who owns the `~/Desktop/_code` tree and needs portfolio-level visibility and control over it. It is not a multi-tenant SaaS and has no authentication layer or user model -- it assumes a trusted, local, single-user context and binds to a fixed dev port (`10467`).
+
+Secondary consumers are the **other services in the operational ecosystem**: the `@ai8future/registry` records the service and its `invalidate-cache` command for operational tooling, and the `@ai8future/kafkakit` event bus publishes `ai8.builder.code.scan.completed` events that downstream services can subscribe to. Both integrations degrade silently when their backing infrastructure (the registry daemon, Kafka) is absent, so the dashboard remains fully usable as a standalone local app.
+
 ---
 
 ## Why Does This Product Exist? (Business Goals)
@@ -61,7 +71,7 @@ New projects can be created through the UI via a "New Project" modal. The user p
 
 ### 9. Sandboxed Browser Terminal
 
-Each project has an optional terminal panel that runs whitelisted commands in the project's directory. The terminal supports a controlled set of commands (`ls`, `git`, `npm`, `node`, `grep`, `find`, etc.) with specific dangerous sub-arguments blocked (e.g., `node -e`, `npm exec`, `npx --yes`). The terminal uses `execFile` rather than `exec` to prevent shell injection. This allows quick command execution without leaving the browser, while preventing arbitrary code execution.
+Each project has an optional terminal panel that runs whitelisted commands in the project's directory. The terminal supports a controlled set of commands -- `ls`, `pwd`, `cat`, `head`, `tail`, `wc`, `git`, `npm`, `npx`, `yarn`, `pnpm`, `node`, `grep`, `find`, `echo`, `date`, `which` -- with specific dangerous sub-arguments blocked: `node -e/--eval/-p/--print/-r/--require`, `npm exec/x/init/create/pkg`, `npx --yes/-y/--package`, and `yarn dlx` / `pnpm dlx`. The terminal uses `execFile` rather than `exec` to prevent shell injection. This allows quick command execution without leaving the browser, while preventing arbitrary code execution.
 
 ### 10. IDE and OS Integration
 
@@ -188,3 +198,51 @@ The sidebar displays each status category with a project count badge and an expa
 6. **Actions bridge to desktop tools** -- one-click open in VS Code, reveal in Finder, sandboxed terminal, and AI-powered project scaffolding reduce context switching.
 7. **Security is defense-in-depth** -- even as a local tool, path traversal, JSON injection, shell injection, and resource exhaustion are all guarded against.
 8. **Operations are built in** -- health checks, crash logging, event publishing, service registry, and observability are not afterthoughts but integral parts of the product.
+
+---
+
+## How to Think About Code Changes
+
+When editing this codebase, hold these constraints firmly:
+
+1. **The filesystem is the source of truth; do not introduce a database.** Project status, bugs, docs, grades, versions, and git info are all derived from disk on every scan. The only persisted state is the single `.code-manage.json` file for user preferences (stars, custom names, status overrides, tags, notes). Adding a real database would break the core promise that the dashboard always reflects on-disk reality with nothing to sync.
+
+2. **Status is location; moving is a rename.** Never model a status change as a pure metadata write. The `move` action physically `fs.rename()`s the directory and preserves suite affiliation (a project moved back to "active" returns to its original `*_suite` folder). The `.code-manage.json` `status` field is an override, not the primary signal.
+
+3. **Every path crossing a process boundary must be validated.** All user-supplied paths route through `lib/api/pathSecurity.ts` (`validatePath`), which `path.resolve()`s and `fs.realpath()`s to confine them within `CODE_BASE_PATH` and defeat symlink escapes. Mutating bodies use `parseSecureBody` (prototype-pollution + depth guard via `@ai8future/secval`); the terminal endpoint is the one deliberate exception (it uses plain `parseBody` plus its own command whitelist).
+
+4. **Never spawn a shell.** All subprocess work (`git`, `rg`, `ralph`, editor/Finder openers) uses `spawn`/`execFile` with array args -- never `exec` with an interpolated string. New external-tool integrations must follow this pattern and add output-size caps and timeouts.
+
+5. **Respect the caching layer.** Reads go through `getCachedProjects()` (10s TTL with request coalescing); any mutation must call `invalidateProjectCache()` so the next read re-scans. Git/velocity caches are separate, bounded, and FIFO-evicted.
+
+6. **Chassis is mandatory and version-gated.** `instrumentation.ts` and `lib/env.ts` call `requireMajor(11)` before anything else. Environment config flows through `@ai8future/config` + Zod (`lib/env.ts`); ports come from `@ai8future/chassis`; errors are RFC 9457 Problem Details from `@ai8future/errors`. Do not hand-roll replacements for these.
+
+**What belongs here vs. a sibling repo:** This product is purely an *observer and light orchestrator* of the local code tree. The actual code-quality analysis lives in `rcodegen`; project scaffolding lives in `ralph`; the shared framework packages live in `chassis_suite/chassis-ts`. Code Manager only *reads the outputs* of `rcodegen` (the `_rcodegen/` directory) and *shells out to* `ralph` -- it must not absorb their logic. Bug reports and docs are authored elsewhere (by agents/developers dropping files); Code Manager only surfaces them.
+
+---
+
+## Deployment Model and Scale
+
+Code Manager is a **Next.js 16 (App Router) application run locally**, not a deployed cloud service. It is started with `npm run dev` (webpack, port **10467**) or `npm run build && npm run start`. The `--webpack` flag is required: the chassis packages are ESM-only and symlinked from outside the project root via the `file:` protocol, which Turbopack cannot resolve.
+
+Startup wiring lives in `instrumentation.ts` (Next.js instrumentation hook, Node.js runtime only): it version-gates chassis, optionally initializes OpenTelemetry (when `OTEL_ENDPOINT` is set) and the kafkakit event bus (when `KAFKAKIT_BOOTSTRAP_SERVERS` is set), installs crash handlers writing sync logs to `.next/crash.log`, starts a 60-second health monitor (warns above 512MB RSS), registers the HTTP port and the `invalidate-cache` command with `@ai8future/registry`, and runs `@ai8future/lifecycle`'s `run()` to coordinate SIGTERM/SIGINT graceful shutdown.
+
+**Scale characteristics.** The workload is a single user against a single filesystem tree, so scale is bounded by the size of `~/Desktop/_code`. The scanner uses bounded concurrency (3 workers via `@ai8future/work`) for both project discovery and per-project git stats, plus short-lived caches (projects 10s, commits ~30s, velocity 60s) to keep a busy dashboard from triggering redundant full traversals. The `/api/health` endpoint reports unhealthy (HTTP 503) above **1024MB RSS**. There is no horizontal scaling story and none is intended.
+
+---
+
+## Current State and Status
+
+**Version:** 1.5.11 (`VERSION`). The product is built and in active use; the changelog tracks an ongoing cadence of dependency upgrades (currently Next.js 16.2.9, chassis major 11), ESLint cleanups, and stability fixes (notably guards against silent process death and the Turbopack/ESM resolution issue).
+
+**Built and working:**
+- Project discovery, suite grouping, and directory-driven status.
+- Per-project detail (tech stack, version, git, scripts, dependencies, bugs, rcodegen grades, docs, README, terminal).
+- Portfolio Code Health overview, cross-project activity (velocity + commits), and ripgrep full-text search.
+- Status pages (`/active`, `/crawlers`, `/research`, `/tools`, `/icebox`, `/archived`), Settings, and all documented API routes including `/api/health`.
+- Actions: star/favorite, move-between-status, open-in-VS-Code, reveal-in-Finder, project scaffolding via `ralph`.
+- Operational integrations: chassis version gating, registry, lifecycle, kafkakit event bus, optional OTel, feature flags (`@ai8future/flagz`, `FLAG_` prefix), crash diagnostics.
+
+**Planned / placeholder (UI stub only, no backing logic yet):**
+- **Agents** (`/agents`) -- intended for configuring and monitoring automated jobs across codebases.
+- **Config** (`/config`) -- intended for per-codebase settings (ports, custom names, status overrides) surfaced as a dedicated page; today these overrides are only editable via `.code-manage.json` and Settings.
